@@ -269,7 +269,6 @@ public class EmailService
         await _context.SaveChangesAsync();
     }
 
-    // Method for cancellation confirmation (if not already exists)
     public async Task SendCancellationConfirmationAsync(Booking booking, Customer customer, Service service)
     {
         var emailLog = new EmailLog
