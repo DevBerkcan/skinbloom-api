@@ -1,0 +1,88 @@
+namespace BarberDario.Api.DTOs;
+
+// Dashboard Overview Response
+public record DashboardOverviewDto(
+    TodayOverviewDto Today,
+    UpcomingBookingDto? NextBooking,
+    DashboardStatisticsDto Statistics
+);
+
+public record TodayOverviewDto(
+    string Date,
+    int TotalBookings,
+    int CompletedBookings,
+    int PendingBookings,
+    int CancelledBookings,
+    decimal TotalRevenue,
+    List<BookingListItemDto> Bookings
+);
+
+public record UpcomingBookingDto(
+    Guid Id,
+    string BookingNumber,
+    string ServiceName,
+    string CustomerName,
+    string Date,
+    string StartTime,
+    string EndTime,
+    int MinutesUntil
+);
+
+public record DashboardStatisticsDto(
+    int TotalBookingsThisMonth,
+    int TotalBookingsLastMonth,
+    decimal RevenueThisMonth,
+    decimal RevenueLastMonth,
+    int TotalCustomers,
+    int NewCustomersThisMonth,
+    decimal AverageBookingValue,
+    List<PopularServiceDto> PopularServices
+);
+
+public record PopularServiceDto(
+    string ServiceName,
+    int BookingCount,
+    decimal Revenue
+);
+
+public record BookingListItemDto(
+    Guid Id,
+    string BookingNumber,
+    string Status,
+    string ServiceName,
+    string CustomerName,
+    string CustomerEmail,
+    string CustomerPhone,
+    string BookingDate,
+    string StartTime,
+    string EndTime,
+    decimal Price,
+    string? CustomerNotes,
+    DateTime CreatedAt
+);
+
+// Update Booking Status Request
+public record UpdateBookingStatusDto(
+    string Status, // "Confirmed", "Completed", "NoShow", "Cancelled"
+    string? AdminNotes
+);
+
+// Booking Filter Request
+public record BookingFilterDto(
+    string? Status,
+    DateTime? FromDate,
+    DateTime? ToDate,
+    Guid? ServiceId,
+    string? SearchTerm,
+    int Page = 1,
+    int PageSize = 20
+);
+
+// Paginated Response
+public record PagedResponseDto<T>(
+    List<T> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages
+);
