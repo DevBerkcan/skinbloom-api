@@ -10,12 +10,12 @@ namespace BarberDario.Api.Controllers;
 [Route("api/[controller]")]
 public class TestController : ControllerBase
 {
-    private readonly BarberDarioDbContext _context;
+    private readonly SkinbloomDbContext _context;
     private readonly EmailService _emailService;
     private readonly ILogger<TestController> _logger;
 
     public TestController(
-        BarberDarioDbContext context,
+        SkinbloomDbContext context,
         EmailService emailService,
         ILogger<TestController> logger)
     {
@@ -159,7 +159,7 @@ public class TestController : ControllerBase
                 UpdatedAt = DateTime.UtcNow
             };
 
-            await _emailService.SendBookingConfirmationAsync(booking, customer, service);
+            await _emailService.SendBookingConfirmationAsync(booking.Id);
 
             return Ok(new
             {

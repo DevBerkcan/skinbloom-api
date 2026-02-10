@@ -12,11 +12,13 @@ public class BookingsController : ControllerBase
 {
     private readonly BookingService _bookingService;
     private readonly ILogger<BookingsController> _logger;
+    private readonly EmailService _emailService;
 
-    public BookingsController(BookingService bookingService, ILogger<BookingsController> logger)
+    public BookingsController(BookingService bookingService, ILogger<BookingsController> logger, EmailService emailService)
     {
         _bookingService = bookingService;
         _logger = logger;
+        _emailService = emailService;
     }
 
     /// <summary>
@@ -118,6 +120,67 @@ public class BookingsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Cannot cancel booking: {BookingId}", id);
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("confirm/{token}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ConfirmBooking(string token)
+    {
+        var (bookingId, action) = _emailService.DecodeToken(token);
+
+        if (bookingId == Guid.Empty || action != "confirm")
+        {
+            return BadRequest(new { message = "Invalid confirmation link" });
+        }
+
+        var booking = await _bookingService.GetBookingByIdAsync(bookingId);
+        if (booking == null)
+        {
+            return NotFound(new { message = "Booking not found" });
+        }
+
+        try
+        {
+            await _bookingService.ConfirmBookingAsync(bookingId);
+            return Ok(new { message = "Booking confirmed successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("cancel/{token}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CancelBookingByToken(string token)
+    {
+        var (bookingId, action) = _emailService.DecodeToken(token);
+
+        if (bookingId == Guid.Empty || action != "cancel")
+        {
+            return BadRequest(new { message = "Invalid cancellation link" });
+        }
+
+        var booking = await _bookingService.GetBookingByIdAsync(bookingId);
+        if (booking == null)
+        {
+            return NotFound(new { message = "Booking not found" });
+        }
+
+        try
+        {
+            var dto = new CancelBookingDto("Cancelled by customer via email link", true);
+            await _bookingService.CancelBookingAsync(bookingId, dto);
+            return Ok(new { message = "Booking cancelled successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
             return BadRequest(new { message = ex.Message });
         }
     }

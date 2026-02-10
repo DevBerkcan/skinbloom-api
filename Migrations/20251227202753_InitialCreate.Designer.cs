@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BarberDario.Api.Migrations
 {
-    [DbContext(typeof(BarberDarioDbContext))]
+    [DbContext(typeof(SkinbloomDbContext))]
     [Migration("20251227202753_InitialCreate")]
     partial class InitialCreate
     {

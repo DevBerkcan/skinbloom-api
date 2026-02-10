@@ -1,11 +1,12 @@
 using BarberDario.Api.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Skinbloom.Api.Data.Entities;
 
 namespace BarberDario.Api.Data;
 
-public class BarberDarioDbContext : DbContext
+public class SkinbloomDbContext : DbContext
 {
-    public BarberDarioDbContext(DbContextOptions<BarberDarioDbContext> options)
+    public SkinbloomDbContext(DbContextOptions<SkinbloomDbContext> options)
         : base(options)
     {
     }
@@ -17,10 +18,61 @@ public class BarberDarioDbContext : DbContext
     public DbSet<BlockedTimeSlot> BlockedTimeSlots { get; set; }
     public DbSet<EmailLog> EmailLogs { get; set; }
     public DbSet<Setting> Settings { get; set; }
+    public DbSet<ServiceCategory> ServiceCategories { get; set; }
+    public DbSet<PageView> PageViews { get; set; }
+    public DbSet<Conversion> Conversions { get; set; }
+    public DbSet<AnalyticsSummary> AnalyticsSummaries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // In OnModelCreating
+        modelBuilder.Entity<PageView>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PageUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.ReferrerUrl).HasMaxLength(500);
+            entity.HasIndex(e => e.ViewedAt);
+            entity.HasIndex(e => e.SessionId);
+        });
+
+        modelBuilder.Entity<Conversion>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ConversionType).IsRequired().HasMaxLength(50);
+            entity.HasOne(e => e.Booking)
+                  .WithMany()
+                  .HasForeignKey(e => e.BookingId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(e => e.ConvertedAt);
+        });
+
+        modelBuilder.Entity<AnalyticsSummary>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.SummaryDate).IsUnique();
+        });
+
+        // ServiceCategory configuration
+        modelBuilder.Entity<ServiceCategory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        modelBuilder.Entity<Service>(entity =>
+        {
+            entity.HasOne(s => s.Category)
+                  .WithMany(c => c.Services)
+                  .HasForeignKey(s => s.Id)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
 
         // Service Configuration
         modelBuilder.Entity<Service>(entity =>

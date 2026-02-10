@@ -6,10 +6,10 @@ namespace BarberDario.Api.Services;
 
 public class AvailabilityService
 {
-    private readonly BarberDarioDbContext _context;
+    private readonly SkinbloomDbContext _context;
     private readonly ILogger<AvailabilityService> _logger;
 
-    public AvailabilityService(BarberDarioDbContext context, ILogger<AvailabilityService> logger)
+    public AvailabilityService(SkinbloomDbContext context, ILogger<AvailabilityService> logger)
     {
         _context = context;
         _logger = logger;

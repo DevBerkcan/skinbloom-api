@@ -1,3 +1,5 @@
+using Skinbloom.Api.Data.Entities;
+
 namespace BarberDario.Api.Data.Entities;
 
 public class Service
@@ -13,5 +15,6 @@ public class Service
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
+    public ServiceCategory Category { get; set; } = null!;
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

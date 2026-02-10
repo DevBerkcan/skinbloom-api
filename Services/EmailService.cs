@@ -1,7 +1,10 @@
+// Update BarberDario.Api.Services/EmailService.cs
+using BarberDario.Api.Data;
 using BarberDario.Api.Data.Entities;
 using BarberDario.Api.Options;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
@@ -10,316 +13,490 @@ namespace BarberDario.Api.Services;
 public class EmailService
 {
     private readonly EmailOptions _emailOptions;
+    private readonly SkinbloomDbContext _context;
     private readonly ILogger<EmailService> _logger;
 
-    public EmailService(IOptions<EmailOptions> emailOptions, ILogger<EmailService> logger)
+    public EmailService(
+        IOptions<EmailOptions> emailOptions,
+        SkinbloomDbContext context,
+        ILogger<EmailService> logger)
     {
         _emailOptions = emailOptions.Value;
+        _context = context;
         _logger = logger;
     }
 
-    public async Task SendBookingConfirmationAsync(Booking booking, Customer customer, Service service)
+    public async Task SendBookingConfirmationAsync(Guid bookingId)
     {
-        var subject = $"Terminbestätigung - {service.Name}";
-        var body = GenerateBookingConfirmationHtml(booking, customer, service);
+        var booking = await _context.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Service)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
 
-        await SendEmailAsync(customer.Email, customer.FirstName, subject, body);
-    }
+        if (booking == null)
+        {
+            throw new ArgumentException("Booking not found");
+        }
 
-    public async Task SendCancellationConfirmationAsync(Booking booking, Customer customer, Service service)
-    {
-        var subject = "Terminstornierung bestätigt";
-        var body = GenerateCancellationConfirmationHtml(booking, customer, service);
+        var emailLog = new EmailLog
+        {
+            BookingId = bookingId,
+            EmailType = EmailType.Confirmation,
+            RecipientEmail = booking.Customer.Email,
+            Subject = $"Buchungsbestätigung: {booking.Service.Name} am {booking.BookingDate:dd.MM.yyyy}",
+            Status = EmailStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        await SendEmailAsync(customer.Email, customer.FirstName, subject, body);
-    }
-
-    public async Task SendReminderEmailAsync(Booking booking, Customer customer, Service service)
-    {
-        var subject = $"Erinnerung: Dein Termin morgen - {service.Name}";
-        var body = GenerateReminderEmailHtml(booking, customer, service);
-
-        await SendEmailAsync(customer.Email, customer.FirstName, subject, body);
-    }
-
-    private async Task SendEmailAsync(string toEmail, string toName, string subject, string htmlBody)
-    {
         try
         {
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(_emailOptions.SenderName, _emailOptions.SenderEmail));
-            message.To.Add(new MailboxAddress(toName, toEmail));
-            message.Subject = subject;
+            message.From.Add(new MailboxAddress("Skinbloom Aesthetics", _emailOptions.SenderEmail));
+            message.To.Add(new MailboxAddress(booking.Customer.FullName, booking.Customer.Email));
+            message.Subject = emailLog.Subject;
 
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = htmlBody
-            };
-            message.Body = bodyBuilder.ToMessageBody();
+            // Create HTML email with confirmation/cancellation links
+            var builder = new BodyBuilder();
 
-            using var client = new SmtpClient();
-            await client.ConnectAsync(_emailOptions.SmtpHost, _emailOptions.SmtpPort, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(_emailOptions.SmtpUsername, _emailOptions.SmtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            var confirmationToken = GenerateConfirmationToken(bookingId);
+            var cancellationToken = GenerateCancellationToken(bookingId);
 
-            _logger.LogInformation("Email sent successfully to {Email} with subject: {Subject}", toEmail, subject);
+            var confirmationUrl = $"{_emailOptions.BaseUrl}/api/bookings/confirm/{confirmationToken}";
+            var cancellationUrl = $"{_emailOptions.BaseUrl}/api/bookings/cancel/{cancellationToken}";
+            var rescheduleUrl = $"{_emailOptions.BaseUrl}/booking/reschedule/{bookingId}";
+
+            builder.HtmlBody = $@"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; }}
+                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background-color: #f8f9fa; padding: 20px; text-align: center; }}
+                        .content {{ padding: 20px; }}
+                        .button {{ display: inline-block; padding: 10px 20px; margin: 10px 5px; 
+                                 background-color: #007bff; color: white; text-decoration: none; 
+                                 border-radius: 5px; }}
+                        .button.confirm {{ background-color: #28a745; }}
+                        .button.cancel {{ background-color: #dc3545; }}
+                        .button.reschedule {{ background-color: #ffc107; color: #212529; }}
+                        .details {{ margin: 20px 0; }}
+                        .footer {{ margin-top: 30px; font-size: 12px; color: #666; }}
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <div class='header'>
+                            <h1>Ihre Buchungsbestätigung</h1>
+                        </div>
+                        <div class='content'>
+                            <p>Hallo {booking.Customer.FirstName},</p>
+                            <p>vielen Dank für Ihre Buchung bei Skinbloom Aesthetics.</p>
+                            
+                            <div class='details'>
+                                <h3>Buchungsdetails:</h3>
+                                <p><strong>Service:</strong> {booking.Service.Name}</p>
+                                <p><strong>Datum:</strong> {booking.BookingDate:dd.MM.yyyy}</p>
+                                <p><strong>Uhrzeit:</strong> {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm}</p>
+                                <p><strong>Dauer:</strong> {booking.Service.DurationMinutes} Minuten</p>
+                                <p><strong>Preis:</strong> {booking.Service.Price:C}</p>
+                            </div>
+
+                            <p>Bitte bestätigen Sie Ihre Buchung oder wählen Sie eine Option:</p>
+                            
+                            <div style='text-align: center;'>
+                                <a href='{confirmationUrl}' class='button confirm'>Buchung bestätigen</a>
+                                <a href='{rescheduleUrl}' class='button reschedule'>Termin ändern</a>
+                                <a href='{cancellationUrl}' class='button cancel'>Buchung stornieren</a>
+                            </div>
+
+                            <p><small>Sie haben 24 Stunden Zeit, Ihre Buchung zu bestätigen.</small></p>
+                        </div>
+                        <div class='footer'>
+                            <p>Skinbloom Aesthetics<br>
+                            Kontakt: +49 123 456789<br>
+                            Email: info@skinbloom.de</p>
+                            <p><a href='{_emailOptions.BaseUrl}/datenschutz'>Datenschutz</a> | 
+                               <a href='{_emailOptions.BaseUrl}/agb'>AGB</a></p>
+                        </div>
+                    </div>
+                </body>
+                </html>";
+
+            builder.TextBody = $@"
+                Buchungsbestätigung - Skinbloom Aesthetics
+
+                Service: {booking.Service.Name}
+                Datum: {booking.BookingDate:dd.MM.yyyy}
+                Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm}
+                Dauer: {booking.Service.DurationMinutes} Minuten
+                Preis: {booking.Service.Price:C}
+
+                Bitte bestätigen Sie Ihre Buchung innerhalb von 24 Stunden:
+                Bestätigen: {confirmationUrl}
+                Ändern: {rescheduleUrl}
+                Stornieren: {cancellationUrl}
+
+                Skinbloom Aesthetics
+                Kontakt: +49 123 456789
+                Email: info@skinbloom.de";
+
+            message.Body = builder.ToMessageBody();
+
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(_emailOptions.SmtpServer, _emailOptions.SmtpPort,
+                SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(_emailOptions.SmtpUsername, _emailOptions.SmtpPassword);
+            await smtp.SendAsync(message);
+            await smtp.DisconnectAsync(true);
+
+            emailLog.Status = EmailStatus.Sent;
+            emailLog.SentAt = DateTime.UtcNow;
+            booking.ConfirmationSentAt = DateTime.UtcNow;
+
+            _logger.LogInformation("Confirmation email sent to {Email}", booking.Customer.Email);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {Email}", toEmail);
-            throw;
+            emailLog.Status = EmailStatus.Failed;
+            emailLog.ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Failed to send confirmation email to {Email}",
+                booking.Customer.Email);
         }
+
+        _context.EmailLogs.Add(emailLog);
+        await _context.SaveChangesAsync();
     }
 
-    private string GenerateBookingConfirmationHtml(Booking booking, Customer customer, Service service)
+    public async Task SendConfirmationReceiptAsync(Booking booking, Customer customer, Service service)
     {
-        var bookingDate = booking.BookingDate.ToString("dddd, dd. MMMM yyyy", new System.Globalization.CultureInfo("de-DE"));
+        var emailLog = new EmailLog
+        {
+            BookingId = booking.Id,
+            EmailType = EmailType.Confirmation,
+            RecipientEmail = customer.Email,
+            Subject = $"Buchungsbestätigung: {service.Name} am {booking.BookingDate:dd.MM.yyyy}",
+            Status = EmailStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        return $@"
-<!DOCTYPE html>
-<html lang='de'>
-<head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }}
-        .container {{ max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #c1272d 0%, #a01f24 100%); color: white; padding: 40px 30px; text-align: center; }}
-        .header h1 {{ margin: 0; font-size: 28px; font-weight: 600; }}
-        .header p {{ margin: 10px 0 0 0; opacity: 0.95; font-size: 16px; }}
-        .content {{ padding: 40px 30px; }}
-        .booking-details {{ background-color: #fef5e7; border-left: 4px solid #c1272d; padding: 20px; margin: 20px 0; border-radius: 4px; }}
-        .booking-details h2 {{ margin: 0 0 15px 0; color: #c1272d; font-size: 18px; }}
-        .detail-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }}
-        .detail-row:last-child {{ border-bottom: none; }}
-        .detail-label {{ font-weight: 600; color: #555; }}
-        .detail-value {{ color: #333; }}
-        .info-box {{ background-color: #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; }}
-        .info-box p {{ margin: 5px 0; color: #0066a1; }}
-        .footer {{ background-color: #2d2d2d; color: #ffffff; padding: 30px; text-align: center; }}
-        .footer p {{ margin: 5px 0; font-size: 14px; }}
-        .button {{ display: inline-block; background-color: #c1272d; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600; }}
-        .checkmark {{ width: 60px; height: 60px; margin: 0 auto 20px; background-color: #4caf50; border-radius: 50%; display: flex; align-items: center; justify-content: center; }}
-        .checkmark::after {{ content: '✓'; color: white; font-size: 36px; font-weight: bold; }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <div class='checkmark'></div>
-            <h1>Termin bestätigt!</h1>
-            <p>Buchungsnummer: {booking.BookingNumber}</p>
-        </div>
+        try
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("Skinbloom Aesthetics", _emailOptions.SenderEmail));
+            message.To.Add(new MailboxAddress(customer.FullName, customer.Email));
+            message.Subject = emailLog.Subject;
 
-        <div class='content'>
-            <p>Hallo {customer.FirstName},</p>
-            <p>vielen Dank für deine Buchung! Dein Termin wurde erfolgreich bestätigt.</p>
+            var builder = new BodyBuilder();
 
-            <div class='booking-details'>
-                <h2>📅 Deine Buchungsdetails</h2>
-                <div class='detail-row'>
-                    <span class='detail-label'>Leistung:</span>
-                    <span class='detail-value'>{service.Name}</span>
+            builder.HtmlBody = $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #d4edda; padding: 20px; text-align: center; }}
+                    .content {{ padding: 20px; }}
+                    .details {{ margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1>✅ Buchung erfolgreich bestätigt</h1>
+                    </div>
+                    <div class='content'>
+                        <p>Hallo {customer.FirstName},</p>
+                        <p>vielen Dank für die Bestätigung Ihrer Buchung bei Skinbloom Aesthetics.</p>
+                        
+                        <div class='details'>
+                            <h3>Ihre Buchungsdetails:</h3>
+                            <p><strong>Buchungsnummer:</strong> {booking.BookingNumber}</p>
+                            <p><strong>Status:</strong> <span style='color: #28a745; font-weight: bold;'>Bestätigt</span></p>
+                            <p><strong>Service:</strong> {service.Name}</p>
+                            <p><strong>Datum:</strong> {booking.BookingDate:dd.MM.yyyy}</p>
+                            <p><strong>Uhrzeit:</strong> {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm}</p>
+                            <p><strong>Dauer:</strong> {service.DurationMinutes} Minuten</p>
+                            <p><strong>Preis:</strong> {service.Price:C}</p>
+                        </div>
+
+                        <p>Wir freuen uns auf Sie!</p>
+                    </div>
                 </div>
-                <div class='detail-row'>
-                    <span class='detail-label'>Datum:</span>
-                    <span class='detail-value'>{bookingDate}</span>
-                </div>
-                <div class='detail-row'>
-                    <span class='detail-label'>Uhrzeit:</span>
-                    <span class='detail-value'>{booking.StartTime:hh\\:mm} - {booking.EndTime:hh\\:mm} Uhr</span>
-                </div>
-                <div class='detail-row'>
-                    <span class='detail-label'>Dauer:</span>
-                    <span class='detail-value'>{service.DurationMinutes} Minuten</span>
-                </div>
-                <div class='detail-row'>
-                    <span class='detail-label'>Preis:</span>
-                    <span class='detail-value'>ab {service.Price:F2} EUR</span>
-                </div>
-            </div>
+            </body>
+            </html>";
 
-            <div class='info-box'>
-                <p><strong>📍 Standort:</strong> Berliner Allee 43, 40212 Düsseldorf</p>
-                <p><strong>📧 Du erhältst 24 Stunden vor deinem Termin eine Erinnerung.</strong></p>
-            </div>
+            builder.TextBody = $@"
+            Ihre Buchung wurde erfolgreich bestätigt - Skinbloom Aesthetics
+            
+            Buchungsnummer: {booking.BookingNumber}
+            Status: Bestätigt
+            Service: {service.Name}
+            Datum: {booking.BookingDate:dd.MM.yyyy}
+            Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm}
+            Dauer: {service.DurationMinutes} Minuten
+            Preis: {service.Price:C}
+            
+            Wir freuen uns auf Sie!
+            
+            Skinbloom Aesthetics
+            Kontakt: +49 123 456789";
 
-            <p><strong>Wichtige Hinweise:</strong></p>
-            <ul style='color: #555; line-height: 1.8;'>
-                <li>Bitte erscheine pünktlich zu deinem Termin</li>
-                <li>Falls du verhindert bist, storniere bitte rechtzeitig</li>
-                <li>Bei Verspätungen über 10 Minuten kann der Termin verkürzt werden</li>
-            </ul>
+            message.Body = builder.ToMessageBody();
 
-            <p>Wir freuen uns auf deinen Besuch!</p>
-            <p>Dein Team von Barber Dario</p>
-        </div>
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(_emailOptions.SmtpServer, _emailOptions.SmtpPort,
+                SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(_emailOptions.SmtpUsername, _emailOptions.SmtpPassword);
+            await smtp.SendAsync(message);
+            await smtp.DisconnectAsync(true);
 
-        <div class='footer'>
-            <p><strong>Barber Dario</strong></p>
-            <p>Berliner Allee 43, 40212 Düsseldorf</p>
-            <p>Tel: +49 211 1234567 | Email: info@barberdario.com</p>
-            <p style='margin-top: 15px; font-size: 12px; color: #999;'>
-                © 2025 Barber Dario. Alle Rechte vorbehalten.
-            </p>
-        </div>
-    </div>
-</body>
-</html>";
+            emailLog.Status = EmailStatus.Sent;
+            emailLog.SentAt = DateTime.UtcNow;
+
+            _logger.LogInformation("Confirmation receipt sent to {Email}", customer.Email);
+        }
+        catch (Exception ex)
+        {
+            emailLog.Status = EmailStatus.Failed;
+            emailLog.ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Failed to send confirmation receipt to {Email}",
+                customer.Email);
+        }
+
+        _context.EmailLogs.Add(emailLog);
+        await _context.SaveChangesAsync();
     }
 
-    private string GenerateCancellationConfirmationHtml(Booking booking, Customer customer, Service service)
+    // Method for cancellation confirmation (if not already exists)
+    public async Task SendCancellationConfirmationAsync(Booking booking, Customer customer, Service service)
     {
-        var bookingDate = booking.BookingDate.ToString("dddd, dd. MMMM yyyy", new System.Globalization.CultureInfo("de-DE"));
+        var emailLog = new EmailLog
+        {
+            BookingId = booking.Id,
+            EmailType = EmailType.Cancellation,
+            RecipientEmail = customer.Email,
+            Subject = $"Stornierung: {service.Name} am {booking.BookingDate:dd.MM.yyyy}",
+            Status = EmailStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        return $@"
-<!DOCTYPE html>
-<html lang='de'>
-<head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }}
-        .container {{ max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #666 0%, #444 100%); color: white; padding: 40px 30px; text-align: center; }}
-        .header h1 {{ margin: 0; font-size: 28px; font-weight: 600; }}
-        .content {{ padding: 40px 30px; }}
-        .booking-details {{ background-color: #f5f5f5; border-left: 4px solid #666; padding: 20px; margin: 20px 0; border-radius: 4px; }}
-        .footer {{ background-color: #2d2d2d; color: #ffffff; padding: 30px; text-align: center; }}
-        .footer p {{ margin: 5px 0; font-size: 14px; }}
-        .button {{ display: inline-block; background-color: #c1272d; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600; }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>Termin storniert</h1>
-            <p>Buchungsnummer: {booking.BookingNumber}</p>
-        </div>
+        try
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("Skinbloom Aesthetics", _emailOptions.SenderEmail));
+            message.To.Add(new MailboxAddress(customer.FullName, customer.Email));
+            message.Subject = emailLog.Subject;
 
-        <div class='content'>
-            <p>Hallo {customer.FirstName},</p>
-            <p>dein Termin wurde erfolgreich storniert.</p>
+            var builder = new BodyBuilder();
 
-            <div class='booking-details'>
-                <h3>Stornierte Buchung:</h3>
-                <p><strong>Leistung:</strong> {service.Name}</p>
-                <p><strong>Datum:</strong> {bookingDate}</p>
-                <p><strong>Uhrzeit:</strong> {booking.StartTime:hh\\:mm} - {booking.EndTime:hh\\:mm} Uhr</p>
-            </div>
+            builder.HtmlBody = $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #f8d7da; padding: 20px; text-align: center; }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1>❌ Buchung storniert</h1>
+                    </div>
+                    <div class='content'>
+                        <p>Hallo {customer.FirstName},</p>
+                        <p>Ihre Buchung bei Skinbloom Aesthetics wurde storniert.</p>
+                        
+                        <h3>Stornierte Buchung:</h3>
+                        <p><strong>Service:</strong> {service.Name}</p>
+                        <p><strong>Datum:</strong> {booking.BookingDate:dd.MM.yyyy}</p>
+                        <p><strong>Uhrzeit:</strong> {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm}</p>
+                        
+                        <p>Wir hoffen, Sie bald wieder bei uns begrüßen zu dürfen.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
 
-            <p>Du kannst jederzeit einen neuen Termin buchen.</p>
+            builder.TextBody = $@"
+            Buchung storniert - Skinbloom Aesthetics
+            
+            Ihre Buchung wurde storniert.
+            
+            Service: {service.Name}
+            Datum: {booking.BookingDate:dd.MM.yyyy}
+            Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm}
+            
+            Wir hoffen, Sie bald wieder bei uns begrüßen zu dürfen.
+            
+            Skinbloom Aesthetics
+            Kontakt: +49 123 456789";
 
-            <a href='https://barberdario.com/booking' class='button'>Neuen Termin buchen</a>
+            message.Body = builder.ToMessageBody();
 
-            <p>Wir hoffen, dich bald wieder begrüßen zu dürfen!</p>
-            <p>Dein Team von Barber Dario</p>
-        </div>
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(_emailOptions.SmtpServer, _emailOptions.SmtpPort,
+                SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(_emailOptions.SmtpUsername, _emailOptions.SmtpPassword);
+            await smtp.SendAsync(message);
+            await smtp.DisconnectAsync(true);
 
-        <div class='footer'>
-            <p><strong>Barber Dario</strong></p>
-            <p>Berliner Allee 43, 40212 Düsseldorf</p>
-            <p>Tel: +49 211 1234567 | Email: info@barberdario.com</p>
-        </div>
-    </div>
-</body>
-</html>";
+            emailLog.Status = EmailStatus.Sent;
+            emailLog.SentAt = DateTime.UtcNow;
+
+            _logger.LogInformation("Cancellation confirmation sent to {Email}", customer.Email);
+        }
+        catch (Exception ex)
+        {
+            emailLog.Status = EmailStatus.Failed;
+            emailLog.ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Failed to send cancellation confirmation to {Email}",
+                customer.Email);
+        }
+
+        _context.EmailLogs.Add(emailLog);
+        await _context.SaveChangesAsync();
     }
 
-    private string GenerateReminderEmailHtml(Booking booking, Customer customer, Service service)
+    public async Task SendBookingReminderAsync(Guid bookingId)
     {
-        var bookingDate = booking.BookingDate.ToString("dddd, dd. MMMM yyyy", new System.Globalization.CultureInfo("de-DE"));
-        var tomorrow = booking.BookingDate.AddDays(-1);
+        var booking = await _context.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Service)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
 
-        return $@"
-<!DOCTYPE html>
-<html lang='de'>
-<head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }}
-        .container {{ max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; padding: 40px 30px; text-align: center; }}
-        .header h1 {{ margin: 0; font-size: 28px; font-weight: 600; }}
-        .content {{ padding: 40px 30px; }}
-        .booking-details {{ background-color: #fff3e0; border-left: 4px solid #ff9800; padding: 20px; margin: 20px 0; border-radius: 4px; }}
-        .booking-details h2 {{ margin: 0 0 15px 0; color: #ff9800; font-size: 18px; }}
-        .detail-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }}
-        .detail-row:last-child {{ border-bottom: none; }}
-        .detail-label {{ font-weight: 600; color: #555; }}
-        .detail-value {{ color: #333; }}
-        .alert-box {{ background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }}
-        .alert-box p {{ margin: 5px 0; color: #856404; font-weight: 600; font-size: 16px; }}
-        .footer {{ background-color: #2d2d2d; color: #ffffff; padding: 30px; text-align: center; }}
-        .footer p {{ margin: 5px 0; font-size: 14px; }}
-        .clock-icon {{ font-size: 48px; margin-bottom: 10px; }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <div class='clock-icon'>⏰</div>
-            <h1>Terminerinnerung</h1>
-            <p>Dein Termin ist morgen!</p>
-        </div>
+        if (booking == null || booking.Status != BookingStatus.Confirmed)
+            return;
 
-        <div class='content'>
-            <p>Hallo {customer.FirstName},</p>
+        var emailLog = new EmailLog
+        {
+            BookingId = bookingId,
+            EmailType = EmailType.Reminder,
+            RecipientEmail = booking.Customer.Email,
+            Subject = $"Erinnerung: Termin am {booking.BookingDate:dd.MM.yyyy}",
+            Status = EmailStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
 
-            <div class='alert-box'>
-                <p>🗓️ Dein Termin ist morgen!</p>
-            </div>
+        try
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("Skinbloom Aesthetics", _emailOptions.SenderEmail));
+            message.To.Add(new MailboxAddress(booking.Customer.FullName, booking.Customer.Email));
+            message.Subject = emailLog.Subject;
 
-            <p>Wir freuen uns darauf, dich morgen bei uns begrüßen zu dürfen.</p>
+            var builder = new BodyBuilder();
+            var cancellationToken = GenerateCancellationToken(bookingId);
+            var cancellationUrl = $"{_emailOptions.BaseUrl}/api/bookings/cancel/{cancellationToken}";
 
-            <div class='booking-details'>
-                <h2>📋 Deine Termindetails</h2>
-                <div class='detail-row'>
-                    <span class='detail-label'>Buchungsnummer:</span>
-                    <span class='detail-value'>{booking.BookingNumber}</span>
-                </div>
-                <div class='detail-row'>
-                    <span class='detail-label'>Leistung:</span>
-                    <span class='detail-value'>{service.Name}</span>
-                </div>
-                <div class='detail-row'>
-                    <span class='detail-label'>Datum:</span>
-                    <span class='detail-value'>{bookingDate}</span>
-                </div>
-                <div class='detail-row'>
-                    <span class='detail-label'>Uhrzeit:</span>
-                    <span class='detail-value'>{booking.StartTime:hh\\:mm} - {booking.EndTime:hh\\:mm} Uhr</span>
-                </div>
-            </div>
+            builder.HtmlBody = $@"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; line-height: 1.6; }}
+                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background-color: #fff3cd; padding: 20px; text-align: center; }}
+                        .button {{ display: inline-block; padding: 10px 20px; margin: 10px; 
+                                 background-color: #dc3545; color: white; text-decoration: none; 
+                                 border-radius: 5px; }}
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <div class='header'>
+                            <h2>📅 Terminerinnerung</h2>
+                        </div>
+                        <p>Hallo {booking.Customer.FirstName},</p>
+                        <p>dies ist eine freundliche Erinnerung an Ihren Termin morgen:</p>
+                        <p><strong>{booking.Service.Name}</strong><br>
+                           {booking.BookingDate:dd.MM.yyyy} um {booking.StartTime:HH:mm} Uhr</p>
+                        <p>Bitte erscheinen Sie pünktlich.</p>
+                        <p>Sollten Sie den Termin nicht wahrnehmen können, stornieren Sie bitte hier:</p>
+                        <a href='{cancellationUrl}' class='button'>Termin stornieren</a>
+                        <p>Wir freuen uns auf Sie!</p>
+                    </div>
+                </body>
+                </html>";
 
-            <p><strong>📍 Standort:</strong><br>
-            Barber Dario<br>
-            Berliner Allee 43<br>
-            40212 Düsseldorf</p>
+            builder.TextBody = $@"
+                Terminerinnerung - Skinbloom Aesthetics
 
-            <p><strong>Bitte beachte:</strong></p>
-            <ul style='color: #555; line-height: 1.8;'>
-                <li>Erscheine bitte pünktlich</li>
-                <li>Bei Verhinderung, bitte rechtzeitig stornieren</li>
-                <li>Parkplätze sind vor Ort verfügbar</li>
-            </ul>
+                Termin: {booking.Service.Name}
+                Datum: {booking.BookingDate:dd.MM.yyyy}
+                Uhrzeit: {booking.StartTime:HH:mm}
 
-            <p>Bis morgen!</p>
-            <p>Dein Team von Barber Dario</p>
-        </div>
+                Bitte erscheinen Sie pünktlich.
 
-        <div class='footer'>
-            <p><strong>Barber Dario</strong></p>
-            <p>Berliner Allee 43, 40212 Düsseldorf</p>
-            <p>Tel: +49 211 1234567 | Email: info@barberdario.com</p>
-            <p style='margin-top: 15px; font-size: 12px; color: #999;'>
-                © 2025 Barber Dario. Alle Rechte vorbehalten.
-            </p>
-        </div>
-    </div>
-</body>
-</html>";
+                Stornierung: {cancellationUrl}
+
+                Skinbloom Aesthetics";
+
+            message.Body = builder.ToMessageBody();
+
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(_emailOptions.SmtpServer, _emailOptions.SmtpPort,
+                SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(_emailOptions.SmtpUsername, _emailOptions.SmtpPassword);
+            await smtp.SendAsync(message);
+            await smtp.DisconnectAsync(true);
+
+            emailLog.Status = EmailStatus.Sent;
+            emailLog.SentAt = DateTime.UtcNow;
+            booking.ReminderSentAt = DateTime.UtcNow;
+
+            _logger.LogInformation("Reminder email sent to {Email}", booking.Customer.Email);
+        }
+        catch (Exception ex)
+        {
+            emailLog.Status = EmailStatus.Failed;
+            emailLog.ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Failed to send reminder email to {Email}",
+                booking.Customer.Email);
+        }
+
+        _context.EmailLogs.Add(emailLog);
+        await _context.SaveChangesAsync();
+    }
+
+    private string GenerateConfirmationToken(Guid bookingId)
+    {
+        return Convert.ToBase64String(
+            System.Text.Encoding.UTF8.GetBytes($"{bookingId}:{DateTime.UtcNow.Ticks}:confirm")
+        ).Replace("+", "-").Replace("/", "_").Replace("=", "");
+    }
+
+    private string GenerateCancellationToken(Guid bookingId)
+    {
+        return Convert.ToBase64String(
+            System.Text.Encoding.UTF8.GetBytes($"{bookingId}:{DateTime.UtcNow.Ticks}:cancel")
+        ).Replace("+", "-").Replace("/", "_").Replace("=", "");
+    }
+
+    public (Guid bookingId, string action) DecodeToken(string token)
+    {
+        try
+        {
+            var base64 = token.Replace("-", "+").Replace("_", "/");
+            while (base64.Length % 4 != 0)
+                base64 += "=";
+
+            var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(base64));
+            var parts = decoded.Split(':');
+
+            if (parts.Length == 3 && Guid.TryParse(parts[0], out var bookingId))
+            {
+                return (bookingId, parts[2]);
+            }
+        }
+        catch
+        {
+            // Invalid token
+        }
+
+        return (Guid.Empty, string.Empty);
     }
 }

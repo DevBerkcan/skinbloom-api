@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BarberDario.Api.Migrations
 {
-    [DbContext(typeof(BarberDarioDbContext))]
+    [DbContext(typeof(SkinbloomDbContext))]
     partial class BarberDarioDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

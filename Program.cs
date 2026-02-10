@@ -1,9 +1,8 @@
 using BarberDario.Api.Data;
 using BarberDario.Api.Options;
+using BarberDario.Api.Services;
 using Hangfire;
-using Hangfire.SqlServer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +20,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Add Database Context
-builder.Services.AddDbContext<BarberDarioDbContext>(options =>
+builder.Services.AddDbContext<SkinbloomDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add Options
@@ -30,12 +29,14 @@ builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email
 // Add HttpClient for external APIs
 builder.Services.AddHttpClient();
 
-// Add Application Services
-builder.Services.AddScoped<BarberDario.Api.Services.AvailabilityService>();
-builder.Services.AddScoped<BarberDario.Api.Services.BookingService>();
-builder.Services.AddScoped<BarberDario.Api.Services.EmailService>();
-builder.Services.AddScoped<BarberDario.Api.Services.AdminService>();
-builder.Services.AddScoped<BarberDario.Api.Services.ReminderService>();
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("EmailOptions"));
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<BlockedTimeSlotService>();
+builder.Services.AddScoped<AvailabilityService>();
+builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<ReminderService>();
 
 // Add Hangfire
 builder.Services.AddHangfire(configuration => configuration
@@ -84,20 +85,19 @@ app.MapControllers();
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<BarberDarioDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<SkinbloomDbContext>();
     await db.Database.EnsureCreatedAsync();
 }
 
-// ✅ Schedule recurring jobs (DI-based, safe for IIS / Startup)
-using (var scope = app.Services.CreateScope())
-{
-    var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+//using (var scope = app.Services.CreateScope())
+//{
+//    var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
-    recurringJobs.AddOrUpdate<BarberDario.Api.Services.ReminderService>(
-        "send-daily-reminders",
-        service => service.SendDailyRemindersAsync(),
-        Cron.Daily(9)  // Runs every day at 9:00 AM
-    );
-}
+//    recurringJobs.AddOrUpdate<BarberDario.Api.Services.ReminderService>(
+//        "send-daily-reminders",
+//        service => service.SendDailyRemindersAsync(),
+//        Cron.Daily(9)  
+//    );
+//}
 
 app.Run();

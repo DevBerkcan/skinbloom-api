@@ -7,10 +7,10 @@ namespace BarberDario.Api.Services;
 
 public class AdminService
 {
-    private readonly BarberDarioDbContext _context;
+    private readonly SkinbloomDbContext _context;
     private readonly ILogger<AdminService> _logger;
 
-    public AdminService(BarberDarioDbContext context, ILogger<AdminService> logger)
+    public AdminService(SkinbloomDbContext context, ILogger<AdminService> logger)
     {
         _context = context;
         _logger = logger;

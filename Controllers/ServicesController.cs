@@ -9,10 +9,10 @@ namespace BarberDario.Api.Controllers;
 [Route("api/[controller]")]
 public class ServicesController : ControllerBase
 {
-    private readonly BarberDarioDbContext _context;
+    private readonly SkinbloomDbContext _context;
     private readonly ILogger<ServicesController> _logger;
 
-    public ServicesController(BarberDarioDbContext context, ILogger<ServicesController> logger)
+    public ServicesController(SkinbloomDbContext context, ILogger<ServicesController> logger)
     {
         _context = context;
         _logger = logger;

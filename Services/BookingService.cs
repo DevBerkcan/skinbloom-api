@@ -1,18 +1,21 @@
 using BarberDario.Api.Data;
 using BarberDario.Api.Data.Entities;
 using BarberDario.Api.DTOs;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
+using MimeKit;
 
 namespace BarberDario.Api.Services;
 
 public class BookingService
 {
-    private readonly BarberDarioDbContext _context;
+    private readonly SkinbloomDbContext _context;
     private readonly ILogger<BookingService> _logger;
     private readonly EmailService _emailService;
 
     public BookingService(
-        BarberDarioDbContext context,
+        SkinbloomDbContext context,
         ILogger<BookingService> logger,
         EmailService emailService)
     {
@@ -118,7 +121,7 @@ public class BookingService
         bool emailSent = false;
         try
         {
-            await _emailService.SendBookingConfirmationAsync(booking, customer, service);
+            await _emailService.SendBookingConfirmationAsync(booking.Id);
             booking.ConfirmationSentAt = DateTime.UtcNow;
 
             // Log Email
@@ -315,6 +318,113 @@ public class BookingService
             true,
             "Termin erfolgreich storniert",
             emailSent
+        );
+    }
+
+    // Add this method to your BookingService class
+    public async Task<BookingResponseDto> ConfirmBookingAsync(Guid bookingId)
+    {
+        // 1. Find booking with customer and service details
+        var booking = await _context.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Service)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+
+        if (booking == null)
+        {
+            throw new ArgumentException("Buchung nicht gefunden");
+        }
+
+        // 2. Check if booking can be confirmed
+        if (booking.Status != BookingStatus.Pending)
+        {
+            throw new InvalidOperationException(
+                $"Buchung kann nicht bestätigt werden. Aktueller Status: {booking.Status}");
+        }
+
+        // 3. Check if confirmation is still valid (within 24 hours)
+        var hoursSinceCreation = (DateTime.UtcNow - booking.CreatedAt).TotalHours;
+        if (hoursSinceCreation > 24)
+        {
+            throw new InvalidOperationException(
+                "Bestätigungsfrist (24 Stunden) abgelaufen. Bitte kontaktieren Sie uns oder erstellen Sie eine neue Buchung.");
+        }
+
+        // 4. Check if booking date is not in the past
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (booking.BookingDate < today)
+        {
+            throw new InvalidOperationException(
+                "Vergangene Buchungen können nicht bestätigt werden.");
+        }
+
+        // 5. Update booking status
+        booking.Status = BookingStatus.Confirmed;
+        booking.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Booking confirmed: {BookingId} for customer {Email}",
+            booking.Id, booking.Customer.Email
+        );
+
+        // 6. Send confirmation receipt
+        bool emailSent = false;
+        try
+        {
+            await _emailService.SendConfirmationReceiptAsync(booking, booking.Customer, booking.Service);
+
+            _context.EmailLogs.Add(new EmailLog
+            {
+                BookingId = booking.Id,
+                RecipientEmail = booking.Customer.Email,
+                EmailType = EmailType.Confirmation,
+                SentAt = DateTime.UtcNow,
+                Status = EmailStatus.Sent
+            });
+
+            await _context.SaveChangesAsync();
+            emailSent = true;
+
+            _logger.LogInformation("Confirmation receipt sent to {Email}", booking.Customer.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send confirmation receipt to {Email}", booking.Customer.Email);
+
+            _context.EmailLogs.Add(new EmailLog
+            {
+                BookingId = booking.Id,
+                RecipientEmail = booking.Customer.Email,
+                EmailType = EmailType.Confirmation,
+                SentAt = DateTime.UtcNow,
+                Status = EmailStatus.Failed,
+                ErrorMessage = ex.Message
+            });
+
+            await _context.SaveChangesAsync();
+        }
+
+        // 7. Return updated booking
+        return new BookingResponseDto(
+            booking.Id,
+            booking.BookingNumber,
+            booking.Status.ToString(),
+            emailSent,
+            new BookingDetailsDto(
+                booking.Service.Id,
+                booking.Service.Name,
+                booking.BookingDate.ToString("yyyy-MM-dd"),
+                booking.StartTime.ToString("HH:mm"),
+                booking.EndTime.ToString("HH:mm"),
+                booking.Service.Price
+            ),
+            new CustomerDto(
+                booking.Customer.FirstName,
+                booking.Customer.LastName,
+                booking.Customer.Email
+            )
         );
     }
 
