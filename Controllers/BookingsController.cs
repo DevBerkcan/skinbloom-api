@@ -199,16 +199,6 @@ public class BookingsController : ControllerBase
                     <p><strong>Status:</strong> <span style='color: #28a745; font-weight: bold;'>{booking.Status}</span></p>
                 </div>
                 
-                <div class='info-box'>
-                    <h4> Wichtige Informationen:</h4>
-                    <ul>
-                        <li>Sie erhalten in Kürze eine Bestätigungs-Email mit allen Details</li>
-                        <li>Bitte erscheinen Sie 10 Minuten vor Ihrem Termin</li>
-                        <li>Bringen Sie einen Lichtbildausweis mit</li>
-                        <li>Bei Verhinderung bitten wir um mindestens 24-stündige Absage</li>
-                    </ul>
-                </div>
-                
                 <p><a href='https://skinbloom.de' style='color: #007bff; text-decoration: none;'>
                      Zurück zur Website
                 </a></p>
@@ -250,295 +240,992 @@ public class BookingsController : ControllerBase
             if (bookingId == Guid.Empty || action != "cancel")
             {
                 return Content(@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Fehler - Skinbloom</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                        .error { color: #dc3545; }
-                        .success { color: #28a745; }
-                    </style>
-                </head>
-                <body>
-                    <h1 class='error'>❌ Ungültiger Stornierungslink</h1>
-                    <p>Der Stornierungslink ist ungültig oder abgelaufen.</p>
-                    <p><a href='https://skinbloom.de'>Zurück zur Website</a></p>
-                </body>
-                </html>", "text/html");
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Fehler - Skinbloom Aesthetics</title>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <style>
+                    body { 
+                        font-family: 'Helvetica', 'Arial', sans-serif; 
+                        text-align: center; 
+                        padding: 0; 
+                        margin: 0;
+                        background-color: #F5EDEB;
+                        color: #1E1E1E;
+                        line-height: 1.6;
+                    }
+                    .container {
+                        max-width: 600px;
+                        margin: 40px auto;
+                        background-color: #FFFFFF;
+                        border-radius: 24px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+                        overflow: hidden;
+                    }
+                    .header {
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        padding: 40px 20px;
+                    }
+                    .content {
+                        padding: 40px;
+                    }
+                    .error {
+                        color: #D8B0AC;
+                        font-size: 48px;
+                        margin-bottom: 20px;
+                    }
+                    .title {
+                        font-size: 24px;
+                        font-weight: 700;
+                        color: #1E1E1E;
+                        margin-bottom: 20px;
+                    }
+                    .message {
+                        color: #8A8A8A;
+                        margin-bottom: 30px;
+                    }
+                    .button {
+                        display: inline-block;
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        color: #FFFFFF;
+                        text-decoration: none;
+                        padding: 14px 32px;
+                        border-radius: 40px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(232,199,195,0.3);
+                    }
+                    .button:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 8px 24px rgba(232,199,195,0.4);
+                    }
+                    .footer {
+                        background-color: #F5EDEB;
+                        padding: 24px;
+                        color: #8A8A8A;
+                        font-size: 14px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <div style='color: #FFFFFF; font-size: 48px; font-weight: 300; margin-bottom: 10px;'>✧</div>
+                        <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
+                    </div>
+                    <div class='content'>
+                        <div class='error'>✧</div>
+                        <h2 class='title'>Ungültiger Stornierungslink</h2>
+                        <p class='message'>Der Stornierungslink ist ungültig oder abgelaufen.</p>
+                        <p style='margin-top: 30px;'>
+                            <a href='https://www.skinbloom-aesthetics.ch/' class='button'>Zurück zur Website</a>
+                        </p>
+                    </div>
+                    <div class='footer'>
+                        <p style='margin: 0;'>Elisabethenstrasse 41, 4051 Basel, Schweiz</p>
+                    </div>
+                </div>
+            </body>
+            </html>", "text/html");
             }
 
             var booking = await _bookingService.GetBookingByIdAsync(bookingId);
             if (booking == null)
             {
                 return Content(@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Fehler - Skinbloom</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                        .error { color: #dc3545; }
-                    </style>
-                </head>
-                <body>
-                    <h1 class='error'>❌ Buchung nicht gefunden</h1>
-                    <p>Die Buchung konnte nicht gefunden werden.</p>
-                    <p><a href='https://skinbloom.de'>Zurück zur Website</a></p>
-                </body>
-                </html>", "text/html");
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Fehler - Skinbloom Aesthetics</title>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <style>
+                    body { 
+                        font-family: 'Helvetica', 'Arial', sans-serif; 
+                        text-align: center; 
+                        padding: 0; 
+                        margin: 0;
+                        background-color: #F5EDEB;
+                        color: #1E1E1E;
+                        line-height: 1.6;
+                    }
+                    .container {
+                        max-width: 600px;
+                        margin: 40px auto;
+                        background-color: #FFFFFF;
+                        border-radius: 24px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+                        overflow: hidden;
+                    }
+                    .header {
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        padding: 40px 20px;
+                    }
+                    .content {
+                        padding: 40px;
+                    }
+                    .error {
+                        color: #D8B0AC;
+                        font-size: 48px;
+                        margin-bottom: 20px;
+                    }
+                    .title {
+                        font-size: 24px;
+                        font-weight: 700;
+                        color: #1E1E1E;
+                        margin-bottom: 20px;
+                    }
+                    .message {
+                        color: #8A8A8A;
+                        margin-bottom: 30px;
+                    }
+                    .button {
+                        display: inline-block;
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        color: #FFFFFF;
+                        text-decoration: none;
+                        padding: 14px 32px;
+                        border-radius: 40px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(232,199,195,0.3);
+                    }
+                    .footer {
+                        background-color: #F5EDEB;
+                        padding: 24px;
+                        color: #8A8A8A;
+                        font-size: 14px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
+                    </div>
+                    <div class='content'>
+                        <div class='error'>✧</div>
+                        <h2 class='title'>Buchung nicht gefunden</h2>
+                        <p class='message'>Die Buchung konnte nicht gefunden werden.</p>
+                        <p style='margin-top: 30px;'>
+                            <a href='https://www.skinbloom-aesthetics.ch/' class='button'>Zurück zur Website</a>
+                        </p>
+                    </div>
+                    <div class='footer'>
+                        <p style='margin: 0;'>Elisabethenstrasse 41, 4051 Basel, Schweiz</p>
+                    </div>
+                </div>
+            </body>
+            </html>", "text/html");
             }
 
             if (booking.Status == "Cancelled")
             {
                 return Content($@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Bereits storniert - Skinbloom</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                        .info {{ color: #17a2b8; }}
-                        .details {{ 
-                            margin: 30px auto; 
-                            max-width: 500px; 
-                            text-align: left; 
-                            background: #f8f9fa; 
-                            padding: 20px; 
-                            border-radius: 10px;
-                            border-left: 4px solid #17a2b8;
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <h1 class='info'> Buchung bereits storniert</h1>
-                    <p>Diese Buchung wurde bereits storniert.</p>
-                    
-                    <div class='details'>
-                        <h3>Buchungsdetails:</h3>
-                        <p><strong>Buchungsnummer:</strong> {booking.BookingNumber}</p>
-                        <p><strong>Service:</strong> {booking.Booking.ServiceName}</p>
-                        <p><strong>Datum:</strong> {booking.Booking.BookingDate}</p>
-                        <p><strong>Uhrzeit:</strong> {booking.Booking.StartTime} - {booking.Booking.EndTime}</p>
-                        <p><strong>Preis:</strong> {booking.Booking.Price:C}</p>
-                        <p><strong>Status:</strong> <span style='color: #dc3545; font-weight: bold;'>Storniert</span></p>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Bereits storniert - Skinbloom Aesthetics</title>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <style>
+                    body {{ 
+                        font-family: 'Helvetica', 'Arial', sans-serif; 
+                        text-align: center; 
+                        padding: 0; 
+                        margin: 0;
+                        background-color: #F5EDEB;
+                        color: #1E1E1E;
+                        line-height: 1.6;
+                    }}
+                    .container {{
+                        max-width: 600px;
+                        margin: 40px auto;
+                        background-color: #FFFFFF;
+                        border-radius: 24px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+                        overflow: hidden;
+                    }}
+                    .header {{
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        padding: 40px 20px;
+                    }}
+                    .content {{
+                        padding: 40px;
+                    }}
+                    .info-icon {{
+                        color: #8A8A8A;
+                        font-size: 48px;
+                        margin-bottom: 20px;
+                    }}
+                    .title {{
+                        font-size: 28px;
+                        font-weight: 700;
+                        color: #1E1E1E;
+                        margin-bottom: 10px;
+                    }}
+                    .booking-number {{
+                        background-color: #F5EDEB;
+                        padding: 12px 24px;
+                        border-radius: 40px;
+                        display: inline-block;
+                        color: #8A8A8A;
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin-bottom: 30px;
+                    }}
+                    .details-card {{
+                        background-color: #F5EDEB;
+                        border-radius: 16px;
+                        padding: 30px;
+                        text-align: left;
+                        margin-bottom: 30px;
+                    }}
+                    .detail-row {{
+                        display: flex;
+                        padding: 12px 0;
+                        border-bottom: 1px solid #E8C7C3;
+                    }}
+                    .detail-row:last-child {{
+                        border-bottom: none;
+                    }}
+                    .detail-label {{
+                        width: 120px;
+                        color: #8A8A8A;
+                        font-weight: 500;
+                    }}
+                    .detail-value {{
+                        flex: 1;
+                        color: #1E1E1E;
+                        font-weight: 600;
+                    }}
+                    .status-cancelled {{
+                        color: #D8B0AC;
+                        font-weight: 700;
+                    }}
+                    .button {{
+                        display: inline-block;
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        color: #FFFFFF;
+                        text-decoration: none;
+                        padding: 14px 32px;
+                        border-radius: 40px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(232,199,195,0.3);
+                    }}
+                    .footer {{
+                        background-color: #F5EDEB;
+                        padding: 24px;
+                        color: #8A8A8A;
+                        font-size: 14px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <div style='color: #FFFFFF; font-size: 48px; font-weight: 300; margin-bottom: 10px;'>✧</div>
+                        <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
                     </div>
-                    
-                    <p><a href='https://skinbloom.de' style='color: #007bff; text-decoration: none;'>
-                         Zurück zur Website
-                    </a></p>
-                </body>
-                </html>", "text/html");
+                    <div class='content'>
+                        <div class='info-icon'>✧</div>
+                        <h2 class='title'>Bereits storniert</h2>
+                        <div class='booking-number'>
+                            Buchungsnummer: {booking.BookingNumber}
+                        </div>
+                        
+                        <div class='details-card'>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Leistung</span>
+                                <span class='detail-value'>{booking.Booking.ServiceName}</span>
+                            </div>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Datum</span>
+                                <span class='detail-value'>{booking.Booking.BookingDate}</span>
+                            </div>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Uhrzeit</span>
+                                <span class='detail-value'>{booking.Booking.StartTime} - {booking.Booking.EndTime}</span>
+                            </div>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Preis</span>
+                                <span class='detail-value'>{booking.Booking.Price:0.00} CHF</span>
+                            </div>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Status</span>
+                                <span class='detail-value'><span class='status-cancelled'>Storniert</span></span>
+                            </div>
+                        </div>
+                        
+                        <p style='margin-top: 30px;'>
+                            <a href='https://www.skinbloom-aesthetics.ch/' class='button'>Zurück zur Website</a>
+                        </p>
+                    </div>
+                    <div class='footer'>
+                        <p style='margin: 0;'>Elisabethenstrasse 41, 4051 Basel, Schweiz</p>
+                    </div>
+                </div>
+            </body>
+            </html>", "text/html");
             }
 
-            // Prüfe ob Buchung bereits abgeschlossen ist
             if (booking.Status == "Completed")
             {
                 return Content($@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Buchung abgeschlossen - Skinbloom</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                        .warning {{ color: #ffc107; }}
-                        .details {{ 
-                            margin: 30px auto; 
-                            max-width: 500px; 
-                            text-align: left; 
-                            background: #f8f9fa; 
-                            padding: 20px; 
-                            border-radius: 10px;
-                            border-left: 4px solid #ffc107;
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <h1 class='warning'> Buchung bereits abgeschlossen</h1>
-                    <p>Diese Buchung wurde bereits abgeschlossen und kann nicht mehr storniert werden.</p>
-                    
-                    <div class='details'>
-                        <h3>Buchungsdetails:</h3>
-                        <p><strong>Buchungsnummer:</strong> {booking.BookingNumber}</p>
-                        <p><strong>Service:</strong> {booking.Booking.ServiceName}</p>
-                        <p><strong>Datum:</strong> {booking.Booking.BookingDate}</p>
-                        <p><strong>Uhrzeit:</strong> {booking.Booking.StartTime} - {booking.Booking.EndTime}</p>
-                        <p><strong>Preis:</strong> {booking.Booking.Price:C}</p>
-                        <p><strong>Status:</strong> <span style='color: #28a745; font-weight: bold;'>Abgeschlossen</span></p>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Buchung abgeschlossen - Skinbloom Aesthetics</title>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <style>
+                    body {{ 
+                        font-family: 'Helvetica', 'Arial', sans-serif; 
+                        text-align: center; 
+                        padding: 0; 
+                        margin: 0;
+                        background-color: #F5EDEB;
+                        color: #1E1E1E;
+                        line-height: 1.6;
+                    }}
+                    .container {{
+                        max-width: 600px;
+                        margin: 40px auto;
+                        background-color: #FFFFFF;
+                        border-radius: 24px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+                        overflow: hidden;
+                    }}
+                    .header {{
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        padding: 40px 20px;
+                    }}
+                    .content {{
+                        padding: 40px;
+                    }}
+                    .info-icon {{
+                        color: #C09995;
+                        font-size: 48px;
+                        margin-bottom: 20px;
+                    }}
+                    .title {{
+                        font-size: 28px;
+                        font-weight: 700;
+                        color: #1E1E1E;
+                        margin-bottom: 10px;
+                    }}
+                    .booking-number {{
+                        background-color: #F5EDEB;
+                        padding: 12px 24px;
+                        border-radius: 40px;
+                        display: inline-block;
+                        color: #8A8A8A;
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin-bottom: 30px;
+                    }}
+                    .details-card {{
+                        background-color: #F5EDEB;
+                        border-radius: 16px;
+                        padding: 30px;
+                        text-align: left;
+                        margin-bottom: 30px;
+                    }}
+                    .detail-row {{
+                        display: flex;
+                        padding: 12px 0;
+                        border-bottom: 1px solid #E8C7C3;
+                    }}
+                    .detail-row:last-child {{
+                        border-bottom: none;
+                    }}
+                    .detail-label {{
+                        width: 120px;
+                        color: #8A8A8A;
+                        font-weight: 500;
+                    }}
+                    .detail-value {{
+                        flex: 1;
+                        color: #1E1E1E;
+                        font-weight: 600;
+                    }}
+                    .status-completed {{
+                        color: #C09995;
+                        font-weight: 700;
+                    }}
+                    .button {{
+                        display: inline-block;
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        color: #FFFFFF;
+                        text-decoration: none;
+                        padding: 14px 32px;
+                        border-radius: 40px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(232,199,195,0.3);
+                    }}
+                    .footer {{
+                        background-color: #F5EDEB;
+                        padding: 24px;
+                        color: #8A8A8A;
+                        font-size: 14px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
                     </div>
-                    
-                    <p>Bei Fragen kontaktieren Sie uns bitte direkt.</p>
-                    <p><a href='https://skinbloom.de' style='color: #007bff; text-decoration: none;'>
-                         Zurück zur Website
-                    </a></p>
-                </body>
-                </html>", "text/html");
+                    <div class='content'>
+                        <div class='info-icon'>✓</div>
+                        <h2 class='title'>Buchung abgeschlossen</h2>
+                        <div class='booking-number'>
+                            Buchungsnummer: {booking.BookingNumber}
+                        </div>
+                        
+                        <div class='details-card'>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Leistung</span>
+                                <span class='detail-value'>{booking.Booking.ServiceName}</span>
+                            </div>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Datum</span>
+                                <span class='detail-value'>{booking.Booking.BookingDate}</span>
+                            </div>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Uhrzeit</span>
+                                <span class='detail-value'>{booking.Booking.StartTime} - {booking.Booking.EndTime}</span>
+                            </div>
+                            <div class='detail-row'>
+                                <span class='detail-label'>Status</span>
+                                <span class='detail-value'><span class='status-completed'>Abgeschlossen</span></span>
+                            </div>
+                        </div>
+                        
+                        <p style='margin-top: 30px;'>
+                            <a href='https://www.skinbloom-aesthetics.ch/' class='button'>Zurück zur Website</a>
+                        </p>
+                    </div>
+                    <div class='footer'>
+                        <p style='margin: 0;'>Elisabethenstrasse 41, 4051 Basel, Schweiz</p>
+                    </div>
+                </div>
+            </body>
+            </html>", "text/html");
             }
 
-            // Buchung stornieren
             var dto = new CancelBookingDto("Storniert vom Kunden per E-Mail-Link", true);
             var result = await _bookingService.CancelBookingAsync(bookingId, dto);
 
             if (!result.Success)
             {
                 return Content($@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Fehler - Skinbloom</title>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                        .error {{ color: #dc3545; }}
-                    </style>
-                </head>
-                <body>
-                    <h1 class='error'> Stornierung fehlgeschlagen</h1>
-                    <p><strong>Fehler:</strong> {result.Message}</p>
-                    <p>Bitte kontaktieren Sie uns telefonisch oder per Email.</p>
-                    <p><a href='https://www.skinbloom-aesthetics.ch/'>Zurück zur Website</a></p>
-                </body>
-                </html>", "text/html");
-            }
-
-            return Content($@"
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Buchung storniert - Skinbloom</title>
+                <title>Fehler - Skinbloom Aesthetics</title>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
                 <style>
-                    body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                    .success {{ color: #28a745; }}
-                    .details {{ 
-                        margin: 30px auto; 
-                        max-width: 500px; 
-                        text-align: left; 
-                        background: #f8f9fa; 
-                        padding: 20px; 
-                        border-radius: 10px;
-                        border-left: 4px solid #28a745;
+                    body {{ 
+                        font-family: 'Helvetica', 'Arial', sans-serif; 
+                        text-align: center; 
+                        padding: 0; 
+                        margin: 0;
+                        background-color: #F5EDEB;
+                        color: #1E1E1E;
+                        line-height: 1.6;
                     }}
-                    .info-box {{ 
-                        margin: 20px auto;
+                    .container {{
                         max-width: 600px;
-                        background: #fff3cd;
-                        padding: 15px;
-                        border-radius: 5px;
-                        text-align: left;
-                        border-left: 4px solid #ffc107;
+                        margin: 40px auto;
+                        background-color: #FFFFFF;
+                        border-radius: 24px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+                        overflow: hidden;
                     }}
-                    .refund-box {{ 
-                        margin: 20px auto;
-                        max-width: 600px;
-                        background: #d4edda;
-                        padding: 15px;
-                        border-radius: 5px;
-                        text-align: left;
-                        border-left: 4px solid #28a745;
+                    .header {{
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        padding: 40px 20px;
+                    }}
+                    .content {{
+                        padding: 40px;
+                    }}
+                    .error {{
+                        color: #D8B0AC;
+                        font-size: 48px;
+                        margin-bottom: 20px;
+                    }}
+                    .title {{
+                        font-size: 24px;
+                        font-weight: 700;
+                        color: #1E1E1E;
+                        margin-bottom: 20px;
+                    }}
+                    .message {{
+                        color: #8A8A8A;
+                        margin-bottom: 30px;
+                    }}
+                    .button {{
+                        display: inline-block;
+                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        color: #FFFFFF;
+                        text-decoration: none;
+                        padding: 14px 32px;
+                        border-radius: 40px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(232,199,195,0.3);
+                    }}
+                    .footer {{
+                        background-color: #F5EDEB;
+                        padding: 24px;
+                        color: #8A8A8A;
+                        font-size: 14px;
                     }}
                 </style>
             </head>
             <body>
-                <h1 class='success'> Buchung erfolgreich storniert!</h1>
-                <p>{result.Message}</p>
-                
-                <div class='details'>
-                    <h3>Stornierte Buchung:</h3>
-                    <p><strong>Buchungsnummer:</strong> {booking.BookingNumber}</p>
-                    <p><strong>Service:</strong> {booking.Booking.ServiceName}</p>
-                    <p><strong>Datum:</strong> {booking.Booking.BookingDate}</p>
-                    <p><strong>Uhrzeit:</strong> {booking.Booking.StartTime} - {booking.Booking.EndTime}</p>
-                    <p><strong>Preis:</strong> {booking.Booking.Price:C}</p>
-                    <p><strong>Status:</strong> <span style='color: #dc3545; font-weight: bold;'>Storniert</span></p>
-                    <p><strong>Grund:</strong> Storniert vom Kunden per E-Mail-Link</p>
+                <div class='container'>
+                    <div class='header'>
+                        <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
+                    </div>
+                    <div class='content'>
+                        <div class='error'>✧</div>
+                        <h2 class='title'>Stornierung fehlgeschlagen</h2>
+                        <p class='message'>{result.Message}</p>
+                        <p style='margin-top: 30px;'>
+                            <a href='https://www.skinbloom-aesthetics.ch/' class='button'>Zurück zur Website</a>
+                        </p>
+                    </div>
+                    <div class='footer'>
+                        <p style='margin: 0;'>Elisabethenstrasse 41, 4051 Basel, Schweiz</p>
+                    </div>
                 </div>
-                
-                {(result.RefundIssued ?
-                    $@"<div class='refund-box'>
-                    <h4> Rückerstattung</h4>
-                    <p>Eine Rückerstattung in Höhe von <strong>{booking.Booking.Price:C}</strong> wurde veranlasst.</p>
-                    <p>Die Rückerstattung kann 5-10 Werktage dauern.</p>
-                </div>" :
-                    @"<div class='info-box'>
-                    <h4> Wichtige Informationen:</h4>
-                    <ul>
-                        <li>Die Stornierung wurde in unserem System erfasst</li>
-                        <li>Bei Fragen kontaktieren Sie uns bitte</li>
-                        <li>Bitte beachten Sie unsere Stornierungsbedingungen</li>
-                    </ul>
-                </div>")}
-                
-                <div style='margin: 30px;'>
-                    <a href='https://www.skinbloom-aesthetics.ch/' style='
-                        background-color: #007bff;
-                        color: white;
-                        padding: 12px 24px;
-                        text-decoration: none;
-                        border-radius: 5px;
-                        display: inline-block;
-                        margin: 10px;
-                    '>
-                         Neuen Termin buchen
-                    </a>
-                    
-                    <a href='https://www.skinbloom-aesthetics.ch/' style='
-                        background-color: #6c757d;
-                        color: white;
-                        padding: 12px 24px;
-                        text-decoration: none;
-                        border-radius: 5px;
-                        display: inline-block;
-                        margin: 10px;
-                    '>
-                        Zurück zur Website
-                    </a>
-                </div>
-                
-                <p style='font-size: 12px; color: #666; margin-top: 30px;'>
-                    * Sie erhalten eine Bestätigungs-Email an: {booking.Customer.Email}
-                </p>
             </body>
             </html>", "text/html");
+            }
+
+            return Content($@"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Buchung storniert - Skinbloom Aesthetics</title>
+            <meta charset='utf-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <style>
+                body {{ 
+                    font-family: 'Helvetica', 'Arial', sans-serif; 
+                    text-align: center; 
+                    padding: 0; 
+                    margin: 0;
+                    background-color: #F5EDEB;
+                    color: #1E1E1E;
+                    line-height: 1.6;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 40px auto;
+                    background-color: #FFFFFF;
+                    border-radius: 24px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+                    overflow: hidden;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    padding: 40px 20px;
+                }}
+                .content {{
+                    padding: 40px;
+                }}
+                .success-icon {{
+                    color: #E8C7C3;
+                    font-size: 64px;
+                    margin-bottom: 20px;
+                }}
+                .title {{
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: #1E1E1E;
+                    margin-bottom: 10px;
+                }}
+                .booking-number {{
+                    background-color: #F5EDEB;
+                    padding: 12px 24px;
+                    border-radius: 40px;
+                    display: inline-block;
+                    color: #8A8A8A;
+                    font-size: 14px;
+                    font-weight: 600;
+                    margin-bottom: 30px;
+                }}
+                .details-card {{
+                    background-color: #F5EDEB;
+                    border-radius: 16px;
+                    padding: 30px;
+                    text-align: left;
+                    margin-bottom: 30px;
+                }}
+                .detail-row {{
+                    display: flex;
+                    padding: 12px 0;
+                    border-bottom: 1px solid #E8C7C3;
+                }}
+                .detail-row:last-child {{
+                    border-bottom: none;
+                }}
+                .detail-label {{
+                    width: 120px;
+                    color: #8A8A8A;
+                    font-weight: 500;
+                }}
+                .detail-value {{
+                    flex: 1;
+                    color: #1E1E1E;
+                    font-weight: 600;
+                }}
+                .status-cancelled {{
+                    color: #D8B0AC;
+                    font-weight: 700;
+                }}
+                .info-box {{
+                    background-color: #FFFFFF;
+                    border: 2px solid #E8C7C3;
+                    border-radius: 16px;
+                    padding: 24px;
+                    text-align: left;
+                    margin-bottom: 30px;
+                }}
+                .refund-box {{
+                    background-color: #F5EDEB;
+                    border: 2px solid #C09995;
+                    border-radius: 16px;
+                    padding: 24px;
+                    text-align: left;
+                    margin-bottom: 30px;
+                }}
+                .info-title {{
+                    color: #1E1E1E;
+                    font-weight: 700;
+                    margin-bottom: 16px;
+                    font-size: 18px;
+                }}
+                .info-list {{
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }}
+                .info-list li {{
+                    padding: 8px 0;
+                    padding-left: 24px;
+                    position: relative;
+                    color: #8A8A8A;
+                }}
+                .info-list li:before {{
+                    content: '✧';
+                    color: #E8C7C3;
+                    position: absolute;
+                    left: 0;
+                    top: 8px;
+                    font-size: 14px;
+                }}
+                .button {{
+                    display: inline-block;
+                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    color: #FFFFFF;
+                    text-decoration: none;
+                    padding: 14px 32px;
+                    border-radius: 40px;
+                    font-weight: 600;
+                    font-size: 16px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 12px rgba(232,199,195,0.3);
+                    margin: 10px;
+                }}
+                .button-secondary {{
+                    display: inline-block;
+                    background-color: #F5EDEB;
+                    color: #1E1E1E;
+                    text-decoration: none;
+                    padding: 14px 32px;
+                    border-radius: 40px;
+                    font-weight: 600;
+                    font-size: 16px;
+                    transition: all 0.3s ease;
+                    border: 2px solid #E8C7C3;
+                    margin: 10px;
+                }}
+                .button:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 24px rgba(232,199,195,0.4);
+                }}
+                .button-secondary:hover {{
+                    background-color: #FFFFFF;
+                }}
+                .footer {{
+                    background-color: #F5EDEB;
+                    padding: 24px;
+                    color: #8A8A8A;
+                    font-size: 14px;
+                }}
+                .price {{
+                    color: #1E1E1E;
+                    font-size: 20px;
+                    font-weight: 700;
+                }}
+                .email-notice {{
+                    color: #8A8A8A;
+                    font-size: 12px;
+                    margin-top: 30px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='content'>
+                    <div class='success-icon'>✓</div>
+                    <h2 class='title'>{result.Message}</h2>
+                    <div class='booking-number'>
+                        Buchungsnummer: {booking.BookingNumber}
+                    </div>
+                    
+                    <div class='details-card'>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Leistung</span>
+                            <span class='detail-value'>{booking.Booking.ServiceName}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Datum</span>
+                            <span class='detail-value'>{booking.Booking.BookingDate}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Uhrzeit</span>
+                            <span class='detail-value'>{booking.Booking.StartTime} - {booking.Booking.EndTime}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Preis</span>
+                            <span class='detail-value'><span class='price'>{booking.Booking.Price:0.00} CHF</span></span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Status</span>
+                            <span class='detail-value'><span class='status-cancelled'>Storniert</span></span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Grund</span>
+                            <span class='detail-value'>Storniert vom Kunden per E-Mail-Link</span>
+                        </div>
+                    </div>
+                    
+                    <div style='margin: 30px 0;'>
+                        <a href='https://www.skinbloom-aesthetics.ch/booking' class='button'>
+                            Neuen Termin buchen
+                        </a>
+                        <a href='https://www.skinbloom-aesthetics.ch/' class='button-secondary'>
+                            Zurück zur Website
+                        </a>
+                    </div>
+                    
+                    <p class='email-notice'>
+                        * Sie erhalten eine Bestätigungs-Email an: {booking.Customer.Email}
+                    </p>
+                </div>
+                <div class='footer'>
+                    <p style='margin: 0;'>Elisabethenstrasse 41, 4051 Basel, Schweiz</p>
+                    <p style='margin: 10px 0 0 0;'>www.skinbloom-aesthetics.ch</p>
+                    <p style='margin: 10px 0 0 0;'>© 2026 Skinbloom Aesthetics</p>
+                </div>
+            </div>
+        </body>
+        </html>", "text/html");
         }
         catch (InvalidOperationException ex)
         {
             return Content($@"
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Fehler - Skinbloom</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                    .error {{ color: #dc3545; }}
-                </style>
-            </head>
-            <body>
-                <h1 class='error'>❌ Fehler bei der Stornierung</h1>
-                <p><strong>Fehler:</strong> {ex.Message}</p>
-                <p>Bitte kontaktieren Sie uns telefonisch oder per Email.</p>
-                <p><a href='https://www.skinbloom-aesthetics.ch/'>Zurück zur Website</a></p>
-            </body>
-            </html>", "text/html");
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Fehler - Skinbloom Aesthetics</title>
+            <meta charset='utf-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <style>
+                body {{ 
+                    font-family: 'Helvetica', 'Arial', sans-serif; 
+                    text-align: center; 
+                    padding: 0; 
+                    margin: 0;
+                    background-color: #F5EDEB;
+                    color: #1E1E1E;
+                    line-height: 1.6;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 40px auto;
+                    background-color: #FFFFFF;
+                    border-radius: 24px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+                    overflow: hidden;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    padding: 40px 20px;
+                }}
+                .content {{
+                    padding: 40px;
+                }}
+                .error {{
+                    color: #D8B0AC;
+                    font-size: 48px;
+                    margin-bottom: 20px;
+                }}
+                .title {{
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: #1E1E1E;
+                    margin-bottom: 20px;
+                }}
+                .message {{
+                    color: #8A8A8A;
+                    margin-bottom: 30px;
+                }}
+                .button {{
+                    display: inline-block;
+                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    color: #FFFFFF;
+                    text-decoration: none;
+                    padding: 14px 32px;
+                    border-radius: 40px;
+                    font-weight: 600;
+                    font-size: 16px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 12px rgba(232,199,195,0.3);
+                }}
+                .footer {{
+                    background-color: #F5EDEB;
+                    padding: 24px;
+                    color: #8A8A8A;
+                    font-size: 14px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
+                </div>
+                <div class='content'>
+                    <div class='error'>✧</div>
+                    <h2 class='title'>Fehler bei der Stornierung</h2>
+                    <p class='message'>{ex.Message}</p>
+                    <p style='margin-top: 30px;'>
+                        <a href='https://www.skinbloom-aesthetics.ch/' class='button'>Zurück zur Website</a>
+                    </p>
+                </div>
+                <div class='footer'>
+                    <p style='margin: 0;'>Elisabethenstrasse 41, 4051 Basel, Schweiz</p>
+                </div>
+            </div>
+        </body>
+        </html>", "text/html");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cancelling booking with token: {Token}", token);
 
             return Content($@"
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Fehler - Skinbloom</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-                    .error {{ color: #dc3545; }}
-                </style>
-            </head>
-            <body>
-                <h1 class='error'>❌ Unerwarteter Fehler</h1>
-                <p>Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie uns.</p>
-                <p><a href='https://www.skinbloom-aesthetics.ch/'>Zurück zur Website</a></p>
-            </body>
-            </html>", "text/html");
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Fehler - Skinbloom Aesthetics</title>
+            <meta charset='utf-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <style>
+                body {{ 
+                    font-family: 'Helvetica', 'Arial', sans-serif; 
+                    text-align: center; 
+                    padding: 0; 
+                    margin: 0;
+                    background-color: #F5EDEB;
+                    color: #1E1E1E;
+                    line-height: 1.6;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 40px auto;
+                    background-color: #FFFFFF;
+                    border-radius: 24px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+                    overflow: hidden;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    padding: 40px 20px;
+                }}
+                .content {{
+                    padding: 40px;
+                }}
+                .error {{
+                    color: #D8B0AC;
+                    font-size: 48px;
+                    margin-bottom: 20px;
+                }}
+                .title {{
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: #1E1E1E;
+                    margin-bottom: 20px;
+                }}
+                .message {{
+                    color: #8A8A8A;
+                    margin-bottom: 30px;
+                }}
+                .button {{
+                    display: inline-block;
+                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    color: #FFFFFF;
+                    text-decoration: none;
+                    padding: 14px 32px;
+                    border-radius: 40px;
+                    font-weight: 600;
+                    font-size: 16px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 12px rgba(232,199,195,0.3);
+                }}
+                .footer {{
+                    background-color: #F5EDEB;
+                    padding: 24px;
+                    color: #8A8A8A;
+                    font-size: 14px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
+                </div>
+                <div class='content'>
+                    <div class='error'>✧</div>
+                    <h2 class='title'>Unerwarteter Fehler</h2>
+                    <p class='message'>Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie uns.</p>
+                    <p style='margin-top: 30px;'>
+                        <a href='https://www.skinbloom-aesthetics.ch/' class='button'>Zurück zur Website</a>
+                    </p>
+                </div>
+                <div class='footer'>
+                    <p style='margin: 0;'>Elisabethenstrasse 41, 4051 Basel, Schweiz</p>
+                </div>
+            </div>
+        </body>
+        </html>", "text/html");
         }
     }
 }
