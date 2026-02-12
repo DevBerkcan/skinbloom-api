@@ -100,8 +100,9 @@ public class BookingService
             BookingDate = bookingDate,
             StartTime = startTime,
             EndTime = endTime,
-            Status = BookingStatus.Pending,
-            CustomerNotes = dto.CustomerNotes
+            Status = BookingStatus.Confirmed,
+            CustomerNotes = dto.CustomerNotes,
+            ConfirmationSentAt = DateTime.UtcNow
         };
 
         _context.Bookings.Add(booking);

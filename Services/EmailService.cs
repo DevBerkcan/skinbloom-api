@@ -321,16 +321,6 @@ public class EmailService
                         </div>
                     </div>
                     
-                    <div class='info-box'>
-                        <h3 class='info-title'>Wichtige Informationen</h3>
-                        <ul class='info-list'>
-                            <li>Bitte erscheinen Sie 10 Minuten vor Ihrem Termin</li>
-                            <li>Bringen Sie einen Lichtbildausweis mit</li>
-                            <li>Bei Verhinderung bitten wir um rechtzeitige Absage</li>
-                            <li>Sie erhalten 24 Stunden vor dem Termin eine Erinnerung</li>
-                        </ul>
-                    </div>
-                    
                     <div class='cancel-section'>
                         <div class='cancel-title'>Termin stornieren?</div>
                         <div class='cancel-text'>
@@ -396,13 +386,6 @@ Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr
 Dauer: {booking.Service.DurationMinutes} Minuten
 Preis: {booking.Service.Price:0.00} CHF
 Status: Bestätigt
-
-WICHTIGE INFORMATIONEN:
-------------------------------------------------
-• Bitte erscheinen Sie 10 Minuten vor Ihrem Termin
-• Bringen Sie einen Lichtbildausweis mit
-• Bei Verhinderung bitten wir um rechtzeitige Absage
-• Sie erhalten 24 Stunden vor dem Termin eine Erinnerung
 
 TERMIN STORNIEREN:
 ------------------------------------------------
