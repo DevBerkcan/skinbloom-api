@@ -2,33 +2,6 @@
 
 namespace BarberDario.Api.DTOs;
 
-// DTOs that match the complex object format your API expects
-public record DateOnlyDto(
-    int Year,
-    int Month,
-    int Day,
-    int DayOfWeek
-);
-
-public record TimeOnlyDto(
-    int Hour,
-    int Minute
-);
-
-public record CreateBlockedTimeSlotDto(
-    DateOnlyDto BlockDate,
-    TimeOnlyDto StartTime,
-    TimeOnlyDto EndTime,
-    string? Reason
-);
-
-public record UpdateBlockedTimeSlotDto(
-    DateOnlyDto BlockDate,
-    TimeOnlyDto StartTime,
-    TimeOnlyDto EndTime,
-    string? Reason
-);
-
 public record BlockedTimeSlotDto(
     Guid Id,
     DateOnly BlockDate,
@@ -36,4 +9,28 @@ public record BlockedTimeSlotDto(
     TimeOnly EndTime,
     string? Reason,
     DateTime CreatedAt
+);
+
+// For single day blocking
+public record CreateBlockedTimeSlotDto(
+    string BlockDate,  // Format: "YYYY-MM-DD"
+    string StartTime,  // Format: "HH:mm"
+    string EndTime,    // Format: "HH:mm"
+    string? Reason
+);
+
+// NEW: For date range blocking
+public record CreateBlockedDateRangeDto(
+    string FromDate,   // Format: "YYYY-MM-DD"
+    string ToDate,     // Format: "YYYY-MM-DD"
+    string StartTime,  // Format: "HH:mm"
+    string EndTime,    // Format: "HH:mm"
+    string? Reason
+);
+
+public record UpdateBlockedTimeSlotDto(
+    string BlockDate,
+    string StartTime,
+    string EndTime,
+    string? Reason
 );

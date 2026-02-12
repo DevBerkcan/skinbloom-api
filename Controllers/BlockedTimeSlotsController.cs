@@ -109,6 +109,32 @@ public class BlockedTimeSlotsController : ControllerBase
         }
     }
 
+    // BarberDario.Api.Controllers/BlockedTimeSlotsController.cs
+
+    [HttpPost("range")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<List<BlockedTimeSlotDto>>> CreateBlockedDateRange(
+        [FromBody] CreateBlockedDateRangeDto dto)
+    {
+        try
+        {
+            var blockedSlots = await _blockedTimeSlotService.CreateBlockedDateRangeAsync(dto);
+            _logger.LogInformation("Blocked time slots created in range: {Count} slots", blockedSlots.Count);
+
+            return Ok(blockedSlots);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
     /// <summary>
     /// Delete a blocked time slot
     /// </summary>

@@ -55,24 +55,129 @@ public class BlockedTimeSlotService
         return blockedSlot;
     }
 
+    public async Task<List<BlockedTimeSlotDto>> CreateBlockedDateRangeAsync(CreateBlockedDateRangeDto dto)
+    {
+        // Parse dates
+        if (!DateOnly.TryParse(dto.FromDate, out var fromDate))
+        {
+            throw new ArgumentException("Ungültiges Startdatum-Format. Verwende YYYY-MM-DD");
+        }
+
+        if (!DateOnly.TryParse(dto.ToDate, out var toDate))
+        {
+            throw new ArgumentException("Ungültiges Enddatum-Format. Verwende YYYY-MM-DD");
+        }
+
+        // Parse times
+        if (!TimeOnly.TryParse(dto.StartTime, out var startTime))
+        {
+            throw new ArgumentException("Ungültiges Startzeit-Format. Verwende HH:mm");
+        }
+
+        if (!TimeOnly.TryParse(dto.EndTime, out var endTime))
+        {
+            throw new ArgumentException("Ungültiges Endzeit-Format. Verwende HH:mm");
+        }
+
+        // Validate date range
+        if (fromDate > toDate)
+        {
+            throw new ArgumentException("Startdatum muss vor Enddatum liegen");
+        }
+
+        // Validate time range
+        if (startTime >= endTime)
+        {
+            throw new ArgumentException("Startzeit muss vor Endzeit liegen");
+        }
+
+        // Validate dates are not in the past
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        if (fromDate < today)
+        {
+            throw new ArgumentException("Startdatum kann nicht in der Vergangenheit liegen");
+        }
+
+        var createdSlots = new List<BlockedTimeSlotDto>();
+        var currentDate = fromDate;
+
+        // Loop through each day in the range
+        while (currentDate <= toDate)
+        {
+            // Check for overlapping blocked slots on this date
+            var overlapping = await _context.BlockedTimeSlots
+                .AnyAsync(b => b.BlockDate == currentDate &&
+                              ((b.StartTime <= startTime && b.EndTime > startTime) ||
+                               (b.StartTime < endTime && b.EndTime >= endTime) ||
+                               (b.StartTime >= startTime && b.EndTime <= endTime)));
+
+            if (overlapping)
+            {
+                throw new InvalidOperationException(
+                    $"Zeitslot am {currentDate:dd.MM.yyyy} überschneidet sich mit einem bestehenden blockierten Zeitraum");
+            }
+
+            // Check for existing bookings on this date
+            var hasBookings = await _context.Bookings
+                .AnyAsync(b => b.BookingDate == currentDate &&
+                              b.Status != BookingStatus.Cancelled &&
+                              ((b.StartTime < endTime && b.EndTime > startTime)));
+
+            if (hasBookings)
+            {
+                throw new InvalidOperationException(
+                    $"Kann Zeitslot am {currentDate:dd.MM.yyyy} nicht blockieren - es existieren bereits Buchungen in diesem Zeitraum");
+            }
+
+            // Create blocked slot for this date
+            var blockedSlot = new BlockedTimeSlot
+            {
+                Id = Guid.NewGuid(),
+                BlockDate = currentDate,
+                StartTime = startTime,
+                EndTime = endTime,
+                Reason = dto.Reason,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.BlockedTimeSlots.Add(blockedSlot);
+            createdSlots.Add(new BlockedTimeSlotDto(
+                blockedSlot.Id,
+                blockedSlot.BlockDate,
+                blockedSlot.StartTime,
+                blockedSlot.EndTime,
+                blockedSlot.Reason,
+                blockedSlot.CreatedAt
+            ));
+
+            currentDate = currentDate.AddDays(1);
+        }
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Blocked time slots created in range: {FromDate} - {ToDate}, Count: {Count}",
+            fromDate, toDate, createdSlots.Count);
+
+        return createdSlots;
+    }
+
     public async Task<BlockedTimeSlotDto> CreateBlockedTimeSlotAsync(CreateBlockedTimeSlotDto dto)
     {
-        // Convert from DTO to DateOnly/TimeOnly
-        var blockDate = new DateOnly(
-            dto.BlockDate.Year,
-            dto.BlockDate.Month,
-            dto.BlockDate.Day
-        );
+        // Parse strings to DateOnly and TimeOnly
+        if (!DateOnly.TryParse(dto.BlockDate, out var blockDate))
+        {
+            throw new ArgumentException("Ungültiges Datumsformat. Verwende YYYY-MM-DD");
+        }
 
-        var startTime = new TimeOnly(
-            dto.StartTime.Hour,
-            dto.StartTime.Minute
-        );
+        if (!TimeOnly.TryParse(dto.StartTime, out var startTime))
+        {
+            throw new ArgumentException("Ungültiges Zeitformat. Verwende HH:mm");
+        }
 
-        var endTime = new TimeOnly(
-            dto.EndTime.Hour,
-            dto.EndTime.Minute
-        );
+        if (!TimeOnly.TryParse(dto.EndTime, out var endTime))
+        {
+            throw new ArgumentException("Ungültiges Zeitformat. Verwende HH:mm");
+        }
 
         // Validate time range
         if (startTime >= endTime)
@@ -122,6 +227,9 @@ public class BlockedTimeSlotService
         _context.BlockedTimeSlots.Add(blockedSlot);
         await _context.SaveChangesAsync();
 
+        _logger.LogInformation("Blocked time slot created: {Id} for {Date} {StartTime}-{EndTime}",
+            blockedSlot.Id, blockDate, startTime, endTime);
+
         return new BlockedTimeSlotDto(
             blockedSlot.Id,
             blockedSlot.BlockDate,
@@ -132,7 +240,6 @@ public class BlockedTimeSlotService
         );
     }
 
-
     public async Task<BlockedTimeSlotDto> UpdateBlockedTimeSlotAsync(
         Guid id, UpdateBlockedTimeSlotDto dto)
     {
@@ -142,22 +249,21 @@ public class BlockedTimeSlotService
             throw new ArgumentException("Blockierter Zeitslot nicht gefunden");
         }
 
-        // Convert from DTO to DateOnly/TimeOnly
-        var blockDate = new DateOnly(
-            dto.BlockDate.Year,
-            dto.BlockDate.Month,
-            dto.BlockDate.Day
-        );
+        // Parse strings to DateOnly and TimeOnly
+        if (!DateOnly.TryParse(dto.BlockDate, out var blockDate))
+        {
+            throw new ArgumentException("Ungültiges Datumsformat. Verwende YYYY-MM-DD");
+        }
 
-        var startTime = new TimeOnly(
-            dto.StartTime.Hour,
-            dto.StartTime.Minute
-        );
+        if (!TimeOnly.TryParse(dto.StartTime, out var startTime))
+        {
+            throw new ArgumentException("Ungültiges Zeitformat. Verwende HH:mm");
+        }
 
-        var endTime = new TimeOnly(
-            dto.EndTime.Hour,
-            dto.EndTime.Minute
-        );
+        if (!TimeOnly.TryParse(dto.EndTime, out var endTime))
+        {
+            throw new ArgumentException("Ungültiges Zeitformat. Verwende HH:mm");
+        }
 
         // Validate time range
         if (startTime >= endTime)
@@ -201,6 +307,9 @@ public class BlockedTimeSlotService
         blockedSlot.Reason = dto.Reason;
 
         await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Blocked time slot updated: {Id} for {Date} {StartTime}-{EndTime}",
+            id, blockDate, startTime, endTime);
 
         return new BlockedTimeSlotDto(
             blockedSlot.Id,
