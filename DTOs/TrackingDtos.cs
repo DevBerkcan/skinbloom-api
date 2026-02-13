@@ -37,3 +37,15 @@ public class RevenueStatisticsDto
     public int WeekBookings { get; set; }
     public int MonthBookings { get; set; }
 }
+
+public class TrackPageViewDto
+{
+    public string? PageUrl { get; set; }
+    public string? ReferrerUrl { get; set; }
+    public string? UtmSource { get; set; }
+    public string? UtmMedium { get; set; }
+    public string? UtmCampaign { get; set; }
+    public string? UtmContent { get; set; }
+    public string? UtmTerm { get; set; }
+    public string? SessionId { get; set; }
+}

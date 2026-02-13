@@ -160,4 +160,38 @@ public class TrackingController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("pageview")] 
+    public async Task<IActionResult> TrackPageView([FromBody] TrackPageViewDto dto)
+    {
+        try
+        {
+            var pageView = new PageView
+            {
+                Id = Guid.NewGuid(),
+                PageUrl = dto.PageUrl ?? "/",
+                ReferrerUrl = dto.ReferrerUrl,
+                UtmSource = dto.UtmSource,
+                UtmMedium = dto.UtmMedium,
+                UtmCampaign = dto.UtmCampaign,
+                UtmContent = dto.UtmContent,
+                UtmTerm = dto.UtmTerm,
+                SessionId = dto.SessionId,
+                UserAgent = Request.Headers.UserAgent.ToString(),
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                ViewedAt = DateTime.UtcNow
+            };
+
+            _context.PageViews.Add(pageView);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Page view tracked: {PageUrl} at {Time}", pageView.PageUrl, DateTime.UtcNow);
+            return Ok(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error tracking page view");
+            return Ok(new { success = false, error = ex.Message }); 
+        }
+    }
 }
