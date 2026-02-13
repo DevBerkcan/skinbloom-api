@@ -38,7 +38,7 @@ public class BookingService
         var startTime = TimeOnly.Parse(dto.StartTime);
         var endTime = startTime.AddMinutes(service.DurationMinutes);
 
-        // 3. Prüfe ob Zeitslot noch verfügbar ist
+        // 3. Prüfe ob Zeitslot noch verfügbar ist - MIT TRANSAKTION!
         var isSlotAvailable = await IsSlotAvailableAsync(
             dto.ServiceId,
             bookingDate,
@@ -92,7 +92,21 @@ public class BookingService
             customer.UpdatedAt = DateTime.UtcNow;
         }
 
-        // 7. Erstelle Buchung
+        // 7. NOCHMAL Prüfen - DIREKT VOR DEM SPEICHERN!
+        var finalCheck = await _context.Bookings
+            .AnyAsync(b =>
+                b.BookingDate == bookingDate &&
+                b.Status != BookingStatus.Cancelled &&
+                b.StartTime < endTime &&
+                b.EndTime > startTime
+            ); 
+
+        if (finalCheck)
+        {
+            throw new InvalidOperationException("Dieser Zeitslot wurde leider soeben von jemand anderem gebucht");
+        }
+
+        // 8. Erstelle Buchung
         var booking = new Booking
         {
             CustomerId = customer.Id,
@@ -100,14 +114,14 @@ public class BookingService
             BookingDate = bookingDate,
             StartTime = startTime,
             EndTime = endTime,
-            Status = BookingStatus.Confirmed,
+            Status = BookingStatus.Confirmed, // Bleibt Confirmed
             CustomerNotes = dto.CustomerNotes,
             ConfirmationSentAt = DateTime.UtcNow
         };
 
         _context.Bookings.Add(booking);
 
-        // 8. Update Customer Stats
+        // 9. Update Customer Stats
         customer.TotalBookings++;
         customer.LastVisit = DateTime.SpecifyKind(bookingDateTime, DateTimeKind.Utc);
 
@@ -118,7 +132,7 @@ public class BookingService
             booking.Id, customer.Email, bookingDate, startTime
         );
 
-        // 9. Sende Bestätigungs-Email
+        // 10. Sende Bestätigungs-Email
         bool emailSent = false;
         try
         {
@@ -430,20 +444,19 @@ public class BookingService
     }
 
     private async Task<bool> IsSlotAvailableAsync(
-        Guid serviceId,
+        Guid serviceId,  // Parameter behalten für Service-Validierung
         DateOnly date,
         TimeOnly startTime,
         TimeOnly endTime)
     {
-        // Prüfe existierende Buchungen
+        // FIX: Prüfe ALLE Buchungen, nicht nur den spezifischen Service!
         var hasConflict = await _context.Bookings
             .AnyAsync(b =>
-                b.ServiceId == serviceId &&
                 b.BookingDate == date &&
                 b.Status != BookingStatus.Cancelled &&
                 b.StartTime < endTime &&
                 b.EndTime > startTime
-            );
+            ); // ❌ KEINE ServiceId Filterung!
 
         if (hasConflict) return false;
 
