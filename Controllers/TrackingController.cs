@@ -1,7 +1,5 @@
-﻿// BarberDario.Api.Controllers/TrackingController.cs
-using BarberDario.Api.Data;
+﻿using BarberDario.Api.Data;
 using BarberDario.Api.DTOs;
-using BarberDario.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Skinbloom.Api.Data.Entities;
@@ -30,6 +28,7 @@ public class TrackingController : ControllerBase
     {
         var pageView = new PageView
         {
+            Id = Guid.NewGuid(),
             PageUrl = dto.PageUrl,
             ReferrerUrl = dto.ReferrerUrl,
             UtmSource = dto.UtmSource,
@@ -59,6 +58,7 @@ public class TrackingController : ControllerBase
     {
         var conversion = new Conversion
         {
+            Id = Guid.NewGuid(),
             BookingId = dto.BookingId,
             ConversionType = dto.ConversionType,
             PageUrl = dto.PageUrl,
@@ -79,117 +79,145 @@ public class TrackingController : ControllerBase
         return Ok();
     }
 
-    // Ersetze die LINQ-Selects mit "await" durch explizite asynchrone Schleifen, da "await" nicht direkt in LINQ-Ausdrücken verwendet werden kann.
-
-    // --- Ersetze im GetAnalytics-Endpoint: ---
-    [HttpGet("analytics")]
+    /// <summary>
+    /// Get tracking statistics for admin dashboard
+    /// </summary>
+    [HttpGet("admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<AnalyticsDashboardDto>> GetAnalytics(
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate)
+    public async Task<ActionResult<TrackingStatisticsDto>> GetTrackingStatistics(
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate)
     {
-        var start = startDate ?? DateTime.UtcNow.AddDays(-30);
-        var end = endDate ?? DateTime.UtcNow;
+        var startDate = fromDate ?? DateTime.UtcNow.AddDays(-30);
+        var endDate = toDate ?? DateTime.UtcNow;
 
-        var totalVisits = await _context.PageViews
-            .Where(p => p.ViewedAt >= start && p.ViewedAt <= end)
+        // Get total bookings in period
+        var totalBookings = await _context.Bookings
+            .Where(b => b.CreatedAt >= startDate && b.CreatedAt <= endDate)
             .CountAsync();
 
-        var uniqueVisitors = await _context.PageViews
-            .Where(p => p.ViewedAt >= start && p.ViewedAt <= end)
-            .Select(p => p.SessionId)
+        // Get bookings with tracking data (UTM parameters)
+        var bookingsWithTracking = await _context.Conversions
+            .Where(c => c.ConvertedAt >= startDate && c.ConvertedAt <= endDate &&
+                       c.ConversionType == "booking")
+            .Select(c => c.BookingId)
             .Distinct()
             .CountAsync();
 
-        var totalBookings = await _context.Conversions
-            .Where(c => c.ConvertedAt >= start && c.ConvertedAt <= end &&
-                       c.ConversionType == "booking")
-            .CountAsync();
-
+        // Get total revenue
         var totalRevenue = await _context.Conversions
-            .Where(c => c.ConvertedAt >= start && c.ConvertedAt <= end &&
+            .Where(c => c.ConvertedAt >= startDate && c.ConvertedAt <= endDate &&
                        c.ConversionType == "booking" && c.Revenue.HasValue)
             .SumAsync(c => c.Revenue) ?? 0;
 
-        var trafficSources = await _context.PageViews
-            .Where(p => p.ViewedAt >= start && p.ViewedAt <= end && p.UtmSource != null)
-            .GroupBy(p => p.UtmSource)
-            .Select(g => new TrafficSourceDto(
-                g.Key ?? "Direct",
-                g.Count(),
-                (int)Math.Round((double)g.Count() / totalVisits * 100)
-            ))
-            .ToListAsync();
+        // Average booking value
+        var averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
 
-        // Fix: Ersetze asynchrones Select durch explizite Schleife
-        var conversionGroups = await _context.Conversions
-            .Where(c => c.ConvertedAt >= start && c.ConvertedAt <= end &&
+        // Get UTM Sources
+        var utmSources = await _context.Conversions
+            .Where(c => c.ConvertedAt >= startDate && c.ConvertedAt <= endDate &&
                        c.ConversionType == "booking" && c.UtmSource != null)
             .GroupBy(c => c.UtmSource)
+            .Select(g => new
+            {
+                Name = g.Key ?? "direct",
+                BookingCount = g.Count(),
+                Revenue = g.Sum(c => c.Revenue) ?? 0
+            })
+            .OrderByDescending(x => x.BookingCount)
             .ToListAsync();
 
-        var conversionRates = new List<ConversionRateDto>();
-        foreach (var g in conversionGroups)
+        var totalSourceBookings = utmSources.Sum(x => x.BookingCount);
+
+        var sourceStats = utmSources.Select(x => new SourceStatisticDto
         {
-            var visits = await _context.PageViews
-                .Where(p => p.ViewedAt >= start && p.ViewedAt <= end &&
-                           p.UtmSource == g.Key)
-                .CountAsync();
+            Name = x.Name,
+            BookingCount = x.BookingCount,
+            Revenue = x.Revenue,
+            Percentage = totalSourceBookings > 0 ? (double)x.BookingCount / totalSourceBookings * 100 : 0
+        }).ToList();
 
-            conversionRates.Add(new ConversionRateDto(
-                g.Key ?? "Direct",
-                g.Count(),
-                visits
-            ));
-        }
-
-        var dashboard = new AnalyticsDashboardDto(
-            totalVisits,
-            uniqueVisitors,
-            totalBookings,
-            totalRevenue,
-            trafficSources,
-            conversionRates
-        );
-
-        return Ok(dashboard);
-    }
-
-    // --- Ersetze im GetCampaignPerformance-Endpoint: ---
-    [HttpGet("campaigns")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<CampaignPerformanceDto>>> GetCampaignPerformance(
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate)
-    {
-        var start = startDate ?? DateTime.UtcNow.AddDays(-30);
-        var end = endDate ?? DateTime.UtcNow;
-
-        var campaignGroups = await _context.Conversions
-            .Where(c => c.ConvertedAt >= start && c.ConvertedAt <= end &&
-                       c.ConversionType == "booking" &&
-                       c.UtmCampaign != null)
-            .GroupBy(c => new { c.UtmCampaign, c.UtmSource, c.UtmMedium })
+        // Get UTM Mediums
+        var utmMediums = await _context.Conversions
+            .Where(c => c.ConvertedAt >= startDate && c.ConvertedAt <= endDate &&
+                       c.ConversionType == "booking" && c.UtmMedium != null)
+            .GroupBy(c => c.UtmMedium)
+            .Select(g => new
+            {
+                Name = g.Key ?? "unknown",
+                BookingCount = g.Count(),
+                Revenue = g.Sum(c => c.Revenue) ?? 0
+            })
+            .OrderByDescending(x => x.BookingCount)
             .ToListAsync();
 
-        var campaignPerformance = new List<CampaignPerformanceDto>();
-        foreach (var g in campaignGroups)
+        var totalMediumBookings = utmMediums.Sum(x => x.BookingCount);
+
+        var mediumStats = utmMediums.Select(x => new SourceStatisticDto
         {
-            var visits = await _context.PageViews
-                .Where(p => p.ViewedAt >= start && p.ViewedAt <= end &&
-                           p.UtmCampaign == g.Key.UtmCampaign)
-                .CountAsync();
+            Name = x.Name,
+            BookingCount = x.BookingCount,
+            Revenue = x.Revenue,
+            Percentage = totalMediumBookings > 0 ? (double)x.BookingCount / totalMediumBookings * 100 : 0
+        }).ToList();
 
-            campaignPerformance.Add(new CampaignPerformanceDto(
-                g.Key.UtmCampaign ?? "Unknown",
-                g.Key.UtmSource ?? "Unknown",
-                g.Key.UtmMedium ?? "Unknown",
-                g.Count(),
-                g.Sum(c => c.Revenue) ?? 0,
-                visits
-            ));
-        }
+        // Get UTM Campaigns
+        var utmCampaigns = await _context.Conversions
+            .Where(c => c.ConvertedAt >= startDate && c.ConvertedAt <= endDate &&
+                       c.ConversionType == "booking" && c.UtmCampaign != null)
+            .GroupBy(c => c.UtmCampaign)
+            .Select(g => new
+            {
+                Name = g.Key ?? "unknown",
+                BookingCount = g.Count(),
+                Revenue = g.Sum(c => c.Revenue) ?? 0
+            })
+            .OrderByDescending(x => x.BookingCount)
+            .Take(10) // Top 10 campaigns
+            .ToListAsync();
 
-        return Ok(campaignPerformance);
+        var totalCampaignBookings = utmCampaigns.Sum(x => x.BookingCount);
+
+        var campaignStats = utmCampaigns.Select(x => new SourceStatisticDto
+        {
+            Name = x.Name,
+            BookingCount = x.BookingCount,
+            Revenue = x.Revenue,
+            Percentage = totalCampaignBookings > 0 ? (double)x.BookingCount / totalCampaignBookings * 100 : 0
+        }).ToList();
+
+        // Get Top Referrers
+        var topReferrers = await _context.PageViews
+            .Where(p => p.ViewedAt >= startDate && p.ViewedAt <= endDate &&
+                       p.ReferrerUrl != null && p.ReferrerUrl != "")
+            .GroupBy(p => p.ReferrerUrl)
+            .Select(g => new
+            {
+                Referrer = g.Key ?? "direct",
+                Count = g.Count()
+            })
+            .OrderByDescending(x => x.Count)
+            .Take(10)
+            .ToListAsync();
+
+        var referrerStats = topReferrers.Select(x => new ReferrerStatisticDto
+        {
+            Referrer = x.Referrer,
+            Count = x.Count
+        }).ToList();
+
+        var result = new TrackingStatisticsDto
+        {
+            TotalBookings = totalBookings,
+            BookingsWithTracking = bookingsWithTracking,
+            UtmSources = sourceStats,
+            UtmMediums = mediumStats,
+            UtmCampaigns = campaignStats,
+            TopReferrers = referrerStats,
+            TotalRevenue = totalRevenue,
+            AverageBookingValue = averageBookingValue
+        };
+
+        return Ok(result);
     }
 }

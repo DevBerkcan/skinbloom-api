@@ -1,63 +1,52 @@
-﻿// BarberDario.Api.DTOs/TrackingDtos.cs
-namespace BarberDario.Api.DTOs;
-
-public record TrackPageViewDto(
-    string PageUrl,
-    string? ReferrerUrl = null,
-    string? UtmSource = null,
-    string? UtmMedium = null,
-    string? UtmCampaign = null,
-    string? UtmContent = null,
-    string? UtmTerm = null,
-    string? SessionId = null
-);
-
-public record TrackConversionDto(
-    string ConversionType,
-    Guid? BookingId = null,
-    string? PageUrl = null,
-    string? ReferrerUrl = null,
-    string? UtmSource = null,
-    string? UtmMedium = null,
-    string? UtmCampaign = null,
-    string? UtmContent = null,
-    string? UtmTerm = null,
-    decimal? Revenue = null
-);
-
-public record AnalyticsDashboardDto(
-    int TotalVisits,
-    int UniqueVisitors,
-    int TotalBookings,
-    decimal TotalRevenue,
-    List<TrafficSourceDto> TrafficSources,
-    List<ConversionRateDto> ConversionRates
-);
-
-public record TrafficSourceDto(
-    string Source,
-    int Visits,
-    int Percentage
-);
-
-public record ConversionRateDto(
-    string Source,
-    int Conversions,
-    int Visits
-)
+﻿// DTOs
+public class TrackPageViewDto
 {
-    public double Rate => Visits > 0 ? Math.Round((double)Conversions / Visits * 100, 2) : 0;
+    public string PageUrl { get; set; } = string.Empty;
+    public string? ReferrerUrl { get; set; }
+    public string? UtmSource { get; set; }
+    public string? UtmMedium { get; set; }
+    public string? UtmCampaign { get; set; }
+    public string? UtmContent { get; set; }
+    public string? UtmTerm { get; set; }
+    public string? SessionId { get; set; }
 }
 
-public record CampaignPerformanceDto(
-    string Campaign,
-    string Source,
-    string Medium,
-    int Conversions,
-    decimal Revenue,
-    int Visits
-)
+public class TrackConversionDto
 {
-    public double ConversionRate => Visits > 0 ? Math.Round((double)Conversions / Visits * 100, 2) : 0;
-    public decimal RevenuePerVisit => Visits > 0 ? Revenue / Visits : 0;
+    public Guid BookingId { get; set; }
+    public string ConversionType { get; set; } = "booking";
+    public string? PageUrl { get; set; }
+    public string? ReferrerUrl { get; set; }
+    public string? UtmSource { get; set; }
+    public string? UtmMedium { get; set; }
+    public string? UtmCampaign { get; set; }
+    public string? UtmContent { get; set; }
+    public string? UtmTerm { get; set; }
+    public decimal? Revenue { get; set; }
+}
+
+public class TrackingStatisticsDto
+{
+    public int TotalBookings { get; set; }
+    public int BookingsWithTracking { get; set; }
+    public List<SourceStatisticDto> UtmSources { get; set; } = new();
+    public List<SourceStatisticDto> UtmMediums { get; set; } = new();
+    public List<SourceStatisticDto> UtmCampaigns { get; set; } = new();
+    public List<ReferrerStatisticDto> TopReferrers { get; set; } = new();
+    public decimal TotalRevenue { get; set; }
+    public decimal AverageBookingValue { get; set; }
+}
+
+public class SourceStatisticDto
+{
+    public string Name { get; set; } = string.Empty;
+    public int BookingCount { get; set; }
+    public decimal Revenue { get; set; }
+    public double Percentage { get; set; }
+}
+
+public class ReferrerStatisticDto
+{
+    public string Referrer { get; set; } = string.Empty;
+    public int Count { get; set; }
 }
