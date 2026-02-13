@@ -22,6 +22,7 @@ public class SkinbloomDbContext : DbContext
     public DbSet<PageView> PageViews { get; set; }
     public DbSet<Conversion> Conversions { get; set; }
     public DbSet<AnalyticsSummary> AnalyticsSummaries { get; set; }
+    public DbSet<LinkClick> LinkClicks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +36,18 @@ public class SkinbloomDbContext : DbContext
             entity.Property(e => e.ReferrerUrl).HasMaxLength(500);
             entity.HasIndex(e => e.ViewedAt);
             entity.HasIndex(e => e.SessionId);
+        });
+
+        modelBuilder.Entity<LinkClick>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.LinkName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LinkUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.SessionId).HasMaxLength(100);
+            entity.Property(e => e.ReferrerUrl).HasMaxLength(500);
+
+            entity.HasIndex(e => e.LinkName);
+            entity.HasIndex(e => e.ClickedAt);
         });
 
         modelBuilder.Entity<Conversion>(entity =>
