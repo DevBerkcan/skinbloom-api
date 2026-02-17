@@ -51,15 +51,8 @@ public class BookingService
             throw new InvalidOperationException("Dieser Zeitslot ist bereits gebucht");
         }
 
-        // 4. Prüfe Mindestvorlauf
-        var minAdvanceHours = await GetSettingValueAsync("MIN_ADVANCE_BOOKING_HOURS", 24);
-        var bookingDateTime = bookingDate.ToDateTime(startTime);
-        var minBookingTime = DateTime.UtcNow.AddHours(minAdvanceHours);
 
-        if (bookingDateTime < minBookingTime)
-        {
-            throw new InvalidOperationException($"Termine müssen mindestens {minAdvanceHours} Stunden im Voraus gebucht werden");
-        }
+        var bookingDateTime = bookingDate.ToDateTime(startTime);
 
         // 5. Prüfe maximalen Vorlauf
         var maxAdvanceDays = await GetSettingValueAsync("MAX_ADVANCE_BOOKING_DAYS", 60);
@@ -114,7 +107,7 @@ public class BookingService
             BookingDate = bookingDate,
             StartTime = startTime,
             EndTime = endTime,
-            Status = BookingStatus.Confirmed, // Bleibt Confirmed
+            Status = BookingStatus.Confirmed, 
             CustomerNotes = dto.CustomerNotes,
             ConfirmationSentAt = DateTime.UtcNow
         };
