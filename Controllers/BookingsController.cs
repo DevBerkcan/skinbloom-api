@@ -1026,7 +1026,7 @@ public class BookingsController : ControllerBase
                     </div>
                     
                     <div style='margin: 30px 0;'>
-                        <a href='https://www.skinbloom-aesthetics.ch/booking' class='button'>
+                        <a href='https://skinbloombooking.gentlegroup.de/booking' class='button'>
                             Neuen Termin buchen
                         </a>
                         <a href='https://www.skinbloom-aesthetics.ch/' class='button-secondary'>

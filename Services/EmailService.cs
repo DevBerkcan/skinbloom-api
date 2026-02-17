@@ -833,7 +833,7 @@ AGB: {_emailOptions.BaseUrl}/agb";
                         <div class='booking-text'>
                             Wir freuen uns, Sie bald wieder bei uns begrüßen zu dürfen.
                         </div>
-                        <a href='https://www.skinbloom-aesthetics.ch/booking' class='button'>
+                        <a href='https://skinbloombooking.gentlegroup.de/booking' class='button'>
                             Neuen Termin buchen
                         </a>
                     </div>
@@ -902,7 +902,7 @@ INFORMATIONEN ZUR STORNIERUNG:
 NEUEN TERMIN BUCHEN:
 ------------------------------------------------
 Wir freuen uns, Sie bald wieder bei uns begrüßen zu dürfen.
-https://www.skinbloom-aesthetics.ch/booking
+https://skinbloombooking.gentlegroup.de/booking
 
 KONTAKT:
 ------------------------------------------------
