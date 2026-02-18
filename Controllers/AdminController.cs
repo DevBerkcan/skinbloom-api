@@ -82,6 +82,7 @@ public class AdminController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
     /// <summary>
     /// Create a manual booking for a customer (e.g., phone call)
     /// </summary>
@@ -95,13 +96,6 @@ public class AdminController : ControllerBase
         {
             var booking = await _manualBookingService.CreateManualBookingAsync(dto);
 
-            _logger.LogInformation(
-                "Manual booking created: {BookingNumber} for {FirstName} {LastName}",
-                booking.BookingNumber,
-                dto.FirstName,
-                dto.LastName
-            );
-
             return CreatedAtAction(
                 nameof(GetManualBooking),
                 new { id = booking.Id },
@@ -110,11 +104,18 @@ public class AdminController : ControllerBase
         }
         catch (ArgumentException ex)
         {
+            _logger.LogWarning(ex, "Invalid manual booking request");
             return BadRequest(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Conflict creating manual booking");
             return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error creating manual booking");
+            return StatusCode(500, new { message = "Ein unerwarteter Fehler ist aufgetreten" });
         }
     }
 

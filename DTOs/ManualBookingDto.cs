@@ -24,5 +24,5 @@ public record ManualBookingResponseDto(
 public record CustomerBasicDto(
     string FirstName,
     string LastName,
-    string? Email
+    string Email
 );
