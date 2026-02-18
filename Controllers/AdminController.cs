@@ -9,12 +9,14 @@ namespace BarberDario.Api.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly AdminService _adminService;
+    private readonly ManualBookingService _manualBookingService;
     private readonly ILogger<AdminController> _logger;
 
-    public AdminController(AdminService adminService, ILogger<AdminController> logger)
+    public AdminController(AdminService adminService, ILogger<AdminController> logger, ManualBookingService manualBookingService)
     {
         _adminService = adminService;
         _logger = logger;
+        _manualBookingService = manualBookingService;
     }
 
     /// <summary>
@@ -79,5 +81,58 @@ public class AdminController : ControllerBase
             _logger.LogWarning(ex, "Invalid request for booking {BookingId}", id);
             return NotFound(new { message = ex.Message });
         }
+    }
+    /// <summary>
+    /// Create a manual booking for a customer (e.g., phone call)
+    /// </summary>
+    [HttpPost("manual/booking")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ManualBookingResponseDto>> CreateManualBooking([FromBody] CreateManualBookingDto dto)
+    {
+        try
+        {
+            var booking = await _manualBookingService.CreateManualBookingAsync(dto);
+
+            _logger.LogInformation(
+                "Manual booking created: {BookingNumber} for {FirstName} {LastName}",
+                booking.BookingNumber,
+                dto.FirstName,
+                dto.LastName
+            );
+
+            return CreatedAtAction(
+                nameof(GetManualBooking),
+                new { id = booking.Id },
+                booking
+            );
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get a manual booking by ID
+    /// </summary>
+    [HttpGet("manual/booking/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ManualBookingResponseDto>> GetManualBooking(Guid id)
+    {
+        var booking = await _manualBookingService.GetManualBookingByIdAsync(id);
+
+        if (booking == null)
+        {
+            return NotFound(new { message = "Buchung nicht gefunden" });
+        }
+
+        return Ok(booking);
     }
 }
