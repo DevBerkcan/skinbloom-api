@@ -1,6 +1,4 @@
-﻿// BarberDario.Api/Controllers/Admin/TrackingController.cs
-using BarberDario.Api.Data;
-using BarberDario.Api.Data.Entities;
+﻿using BarberDario.Api.Data;
 using BarberDario.Api.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

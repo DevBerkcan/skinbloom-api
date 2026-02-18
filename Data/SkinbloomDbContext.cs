@@ -20,8 +20,6 @@ public class SkinbloomDbContext : DbContext
     public DbSet<Setting> Settings { get; set; }
     public DbSet<ServiceCategory> ServiceCategories { get; set; }
     public DbSet<PageView> PageViews { get; set; }
-    public DbSet<Conversion> Conversions { get; set; }
-    public DbSet<AnalyticsSummary> AnalyticsSummaries { get; set; }
     public DbSet<LinkClick> LinkClicks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -50,24 +48,6 @@ public class SkinbloomDbContext : DbContext
             entity.HasIndex(e => e.ClickedAt);
         });
 
-        modelBuilder.Entity<Conversion>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.ConversionType).IsRequired().HasMaxLength(50);
-            entity.HasOne(e => e.Booking)
-                  .WithMany()
-                  .HasForeignKey(e => e.BookingId)
-                  .OnDelete(DeleteBehavior.SetNull);
-            entity.HasIndex(e => e.ConvertedAt);
-        });
-
-        modelBuilder.Entity<AnalyticsSummary>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.SummaryDate).IsUnique();
-        });
-
-        // ServiceCategory configuration
         modelBuilder.Entity<ServiceCategory>(entity =>
         {
             entity.HasKey(e => e.Id);

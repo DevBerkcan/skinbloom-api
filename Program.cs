@@ -15,7 +15,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Skinbloom API",
         Version = "v1",
-        Description = "Skinbloom System API"
+        Description = "Skinbloom API"
     });
 });
 
@@ -89,16 +89,5 @@ if (app.Environment.IsDevelopment())
     var db = scope.ServiceProvider.GetRequiredService<SkinbloomDbContext>();
     await db.Database.EnsureCreatedAsync();
 }
-
-//using (var scope = app.Services.CreateScope())
-//{
-//    var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-
-//    recurringJobs.AddOrUpdate<BarberDario.Api.Services.ReminderService>(
-//        "send-daily-reminders",
-//        service => service.SendDailyRemindersAsync(),
-//        Cron.Daily(9)  
-//    );
-//}
 
 app.Run();
