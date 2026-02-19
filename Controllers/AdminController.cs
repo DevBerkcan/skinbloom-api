@@ -136,4 +136,33 @@ public class AdminController : ControllerBase
 
         return Ok(booking);
     }
+
+    /// <summary>
+    /// Permanently delete a booking (admin only)
+    /// </summary>
+    [HttpDelete("bookings/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<DeleteBookingResponseDto>> DeleteBooking(
+        Guid id,
+        [FromBody] DeleteBookingDto? dto = null)
+    {
+        try
+        {
+            var result = await _adminService.DeleteBookingAsync(id, dto?.Reason);
+            _logger.LogInformation("Booking permanently deleted: {BookingId} by admin", id);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Booking not found for deletion: {BookingId}", id);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Cannot delete booking: {BookingId}", id);
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

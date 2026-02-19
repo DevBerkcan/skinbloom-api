@@ -318,4 +318,40 @@ public class AdminService
             booking.CreatedAt
         );
     }
+
+    public async Task<DeleteBookingResponseDto> DeleteBookingAsync(Guid bookingId, string? reason)
+    {
+        var booking = await _context.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.EmailLogs) // Include related email logs
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+
+        if (booking == null)
+        {
+            throw new ArgumentException("Buchung nicht gefunden");
+        }
+
+        _logger.LogInformation(
+            "Admin deleting booking {BookingId} for customer {CustomerEmail}. Reason: {Reason}",
+            bookingId,
+            booking.Customer?.Email ?? "unknown",
+            reason ?? "No reason provided"
+        );
+
+        // Remove related email logs first (if cascade delete is not set)
+        if (booking.EmailLogs != null && booking.EmailLogs.Any())
+        {
+            _context.EmailLogs.RemoveRange(booking.EmailLogs);
+        }
+
+        // Remove the booking
+        _context.Bookings.Remove(booking);
+
+        await _context.SaveChangesAsync();
+
+        return new DeleteBookingResponseDto(
+            true,
+            "Buchung wurde erfolgreich gelöscht"
+        );
+    }
 }

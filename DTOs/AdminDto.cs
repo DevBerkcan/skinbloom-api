@@ -86,3 +86,13 @@ public record PagedResponseDto<T>(
     int PageSize,
     int TotalPages
 );
+
+// DTOs/AdminDto.cs
+public record DeleteBookingDto(
+    string? Reason
+);
+
+public record DeleteBookingResponseDto(
+    bool Success,
+    string Message
+);
