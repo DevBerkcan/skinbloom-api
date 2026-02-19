@@ -179,75 +179,82 @@ public class AdminService
         var query = _context.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Service)
-            .Select(b => new
-            {
-                Booking = b,
-                CustomerName = b.Customer != null
-                    ? $"{b.Customer.FirstName ?? ""} {b.Customer.LastName ?? ""}".Trim()
-                    : "Unknown Customer",
-                CustomerEmail = b.Customer != null ? b.Customer.Email : null,
-                CustomerPhone = b.Customer != null ? b.Customer.Phone : null,
-                ServiceName = b.Service != null ? b.Service.Name : "Unknown Service",
-                ServicePrice = b.Service != null ? b.Service.Price : 0
-            })
             .AsQueryable();
 
+        // Apply filters
         if (!string.IsNullOrEmpty(filter.Status))
         {
             if (Enum.TryParse<BookingStatus>(filter.Status, true, out var status))
-                query = query.Where(x => x.Booking.Status == status);
+                query = query.Where(b => b.Status == status);
         }
 
         if (filter.FromDate.HasValue)
         {
             var fromDate = DateOnly.FromDateTime(filter.FromDate.Value);
-            query = query.Where(x => x.Booking.BookingDate >= fromDate);
+            query = query.Where(b => b.BookingDate >= fromDate);
         }
 
         if (filter.ToDate.HasValue)
         {
             var toDate = DateOnly.FromDateTime(filter.ToDate.Value);
-            query = query.Where(x => x.Booking.BookingDate <= toDate);
+            query = query.Where(b => b.BookingDate <= toDate);
         }
 
         if (filter.ServiceId.HasValue)
-            query = query.Where(x => x.Booking.ServiceId == filter.ServiceId.Value);
+            query = query.Where(b => b.ServiceId == filter.ServiceId.Value);
 
+        // Fix the search filter - use simple expressions that EF can translate
         if (!string.IsNullOrEmpty(filter.SearchTerm))
         {
             var search = filter.SearchTerm.ToLower();
-            query = query.Where(x =>
-                x.CustomerName.ToLower().Contains(search) ||
-                (x.CustomerEmail ?? "").ToLower().Contains(search) ||
-                (x.CustomerPhone ?? "").Contains(search) ||
-                x.ServiceName.ToLower().Contains(search)
+
+            query = query.Where(b =>
+                (b.Customer != null && b.Customer.FirstName.ToLower().Contains(search)) ||
+                (b.Customer != null && b.Customer.LastName.ToLower().Contains(search)) ||
+                (b.Customer != null && b.Customer.Email != null && b.Customer.Email.ToLower().Contains(search)) ||
+                (b.Customer != null && b.Customer.Phone != null && b.Customer.Phone.Contains(search)) ||
+                (b.Service != null && b.Service.Name.ToLower().Contains(search))
             );
         }
 
         var totalCount = await query.CountAsync();
 
         var bookings = await query
-            .OrderByDescending(x => x.Booking.BookingDate)
-            .ThenByDescending(x => x.Booking.StartTime)
+            .OrderByDescending(b => b.BookingDate)
+            .ThenByDescending(b => b.StartTime)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
             .ToListAsync();
 
-        var items = bookings.Select(x => new BookingListItemDto(
-            x.Booking.Id,
-            Booking.GenerateBookingNumber(x.Booking.BookingDate, x.Booking.Id),
-            x.Booking.Status.ToString(),
-            x.ServiceName,
-            x.CustomerName,
-            x.CustomerEmail,
-            x.CustomerPhone,
-            x.Booking.BookingDate.ToString("yyyy-MM-dd"),
-            x.Booking.StartTime.ToString("HH:mm"),
-            x.Booking.EndTime.ToString("HH:mm"),
-            x.ServicePrice,
-            x.Booking.CustomerNotes,
-            x.Booking.CreatedAt
-        )).ToList();
+        var items = bookings.Select(b =>
+        {
+            // Create customer name safely
+            string customerName = "Unknown Customer";
+            if (b.Customer != null)
+            {
+                var firstName = b.Customer.FirstName ?? "";
+                var lastName = b.Customer.LastName ?? "";
+                customerName = $"{firstName} {lastName}".Trim();
+                if (string.IsNullOrWhiteSpace(customerName))
+                    customerName = "Unknown Customer";
+            }
+
+            return new BookingListItemDto(
+                b.Id,
+                Booking.GenerateBookingNumber(b.BookingDate, b.Id),
+                b.Status.ToString(),
+                b.Service?.Name ?? "Unknown Service",
+                customerName,
+                b.Customer?.Email,
+                b.Customer?.Phone,
+                b.BookingDate.ToString("yyyy-MM-dd"),
+                b.StartTime.ToString("HH:mm"),
+                b.EndTime.ToString("HH:mm"),
+                b.Service?.Price ?? 0,
+                b.CustomerNotes,
+                b.CreatedAt
+            );
+        }).ToList();
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize);
 
