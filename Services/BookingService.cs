@@ -439,7 +439,7 @@ public class BookingService
                 booking.Employee?.Name ?? "N/A",
                 booking.Employee?.Role ?? "N/A",
                 booking.Employee?.Specialty ?? "N/A"
-            )
+           )
         );
     }
 

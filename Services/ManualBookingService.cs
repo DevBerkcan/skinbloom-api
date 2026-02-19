@@ -1,5 +1,4 @@
-﻿// Services/ManualBookingService.cs
-using BarberDario.Api.Data;
+﻿using BarberDario.Api.Data;
 using BarberDario.Api.Data.Entities;
 using BarberDario.Api.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -55,12 +54,21 @@ public class ManualBookingService
         // Find or create customer
         var customer = await FindOrCreateCustomer(dto);
 
+        // Resolve optional employee
+        Employee? employee = null;
+        if (dto.EmployeeId.HasValue)
+        {
+            employee = await _context.Employees
+                .FirstOrDefaultAsync(e => e.Id == dto.EmployeeId.Value && e.IsActive);
+        }
+
         // Create booking
         var booking = new Booking
         {
             Id = Guid.NewGuid(),
             CustomerId = customer.Id,
             ServiceId = service.Id,
+            EmployeeId = employee?.Id,
             BookingDate = bookingDate,
             StartTime = startTime,
             EndTime = endTime,
@@ -81,7 +89,7 @@ public class ManualBookingService
 
         _logger.LogInformation(
             "Manual booking created: {BookingNumber} for customer {CustomerId} - {FirstName} {LastName}",
-            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
+            Booking.GenerateBookingNumber(bookingDate, booking.Id),
             customer.Id,
             customer.FirstName,
             customer.LastName
@@ -117,7 +125,7 @@ public class ManualBookingService
 
         return new ManualBookingResponseDto(
             booking.Id,
-            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
+            Booking.GenerateBookingNumber(bookingDate, booking.Id),
             booking.Status.ToString(),
             emailSent,
             new BookingDetailsDto(
@@ -131,14 +139,11 @@ public class ManualBookingService
             new CustomerBasicDto(
                 customer.FirstName,
                 customer.LastName,
-                customer.Email ?? string.Empty
+                customer.Email
             ),
-            new EmployeeDto(
-                booking.Employee?.Id ?? Guid.Empty,
-                booking.Employee?.Name ?? "N/A",
-                booking.Employee?.Role ?? "N/A",
-                booking.Employee?.Specialty ?? "N/A"
-            )
+            employee != null
+                ? new EmployeeDto(employee.Id, employee.Name, employee.Role, employee.Specialty)
+                : null
         );
     }
 
@@ -147,6 +152,7 @@ public class ManualBookingService
         var booking = await _context.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Service)
+            .Include(b => b.Employee)
             .FirstOrDefaultAsync(b => b.Id == id);
 
         if (booking == null) return null;
@@ -167,98 +173,89 @@ public class ManualBookingService
             new CustomerBasicDto(
                 booking.Customer.FirstName,
                 booking.Customer.LastName,
-                booking.Customer.Email ?? string.Empty
+                booking.Customer.Email
             ),
-            new EmployeeDto(
-                booking.Employee?.Id ?? Guid.Empty,
-                booking.Employee?.Name ?? "N/A",
-                booking.Employee?.Role ?? "N/A",
-                booking.Employee?.Specialty ?? "N/A"
-            )
+            booking.Employee != null
+                ? new EmployeeDto(booking.Employee.Id, booking.Employee.Name, booking.Employee.Role, booking.Employee.Specialty)
+                : null
         );
     }
 
     private async Task<Customer> FindOrCreateCustomer(CreateManualBookingDto dto)
     {
+        // Normalize: treat empty/whitespace as null so unique indexes work correctly
+        var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+        var phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim();
+        var firstName = dto.FirstName.Trim();
+        var lastName = dto.LastName.Trim();
+
         Customer? customer = null;
 
-        // First try to find by email if provided (most reliable)
-        if (!string.IsNullOrEmpty(dto.Email))
+        // 1. Find by email (most reliable)
+        if (email != null)
         {
             customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Email.ToLower() == dto.Email.ToLower());
+                .FirstOrDefaultAsync(c => c.Email != null && c.Email.ToLower() == email.ToLower());
 
             if (customer != null)
-            {
-                _logger.LogInformation("Found existing customer by email: {Email}", dto.Email);
-            }
+                _logger.LogInformation("Found existing customer by email: {Email}", email);
         }
 
-        // If not found by email, try by phone if provided
-        if (customer == null && !string.IsNullOrEmpty(dto.Phone))
+        // 2. Find by phone
+        if (customer == null && phone != null)
         {
             customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Phone == dto.Phone);
+                .FirstOrDefaultAsync(c => c.Phone == phone);
 
             if (customer != null)
-            {
-                _logger.LogInformation("Found existing customer by phone: {Phone}", dto.Phone);
-            }
+                _logger.LogInformation("Found existing customer by phone: {Phone}", phone);
         }
 
-        // If still not found, try by name combination (less reliable, but worth trying)
+        // 3. Find by name (fallback)
         if (customer == null)
         {
             customer = await _context.Customers
                 .FirstOrDefaultAsync(c =>
-                    c.FirstName.ToLower() == dto.FirstName.ToLower() &&
-                    c.LastName.ToLower() == dto.LastName.ToLower());
+                    c.FirstName.ToLower() == firstName.ToLower() &&
+                    c.LastName.ToLower() == lastName.ToLower());
 
             if (customer != null)
-            {
-                _logger.LogInformation("Found existing customer by name: {FirstName} {LastName}",
-                    dto.FirstName, dto.LastName);
-            }
+                _logger.LogInformation("Found existing customer by name: {FirstName} {LastName}", firstName, lastName);
         }
 
         if (customer != null)
         {
-            // Update existing customer with new information
-            customer.FirstName = dto.FirstName;
-            customer.LastName = dto.LastName;
+            // Update name
+            customer.FirstName = firstName;
+            customer.LastName = lastName;
             customer.UpdatedAt = DateTime.UtcNow;
 
-            // Update email if provided and different
-            if (!string.IsNullOrEmpty(dto.Email) && customer.Email != dto.Email)
+            // Update email only if provided and not taken by another customer
+            if (email != null && customer.Email != email)
             {
-                // Check if email is already taken by another customer
-                var emailExists = await _context.Customers
-                    .AnyAsync(c => c.Email == dto.Email && c.Id != customer.Id);
+                var emailTaken = await _context.Customers
+                    .AnyAsync(c => c.Email == email && c.Id != customer.Id);
 
-                if (!emailExists)
-                {
-                    customer.Email = dto.Email;
-                }
+                if (!emailTaken)
+                    customer.Email = email;
             }
 
-            // Update phone if provided and different
-            if (!string.IsNullOrEmpty(dto.Phone) && customer.Phone != dto.Phone)
-            {
-                customer.Phone = dto.Phone;
-            }
+            // Update phone only if provided and different
+            if (phone != null && customer.Phone != phone)
+                customer.Phone = phone;
 
             _logger.LogInformation("Updated existing customer: {CustomerId}", customer.Id);
         }
         else
         {
-            // Create new customer
+            // Create new — store null, NOT empty string, for missing contact info
             customer = new Customer
             {
                 Id = Guid.NewGuid(),
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Email = dto.Email ?? string.Empty,
-                Phone = dto.Phone ?? string.Empty,
+                FirstName = firstName,
+                LastName = lastName,
+                Email = email,   // null if not provided
+                Phone = phone,   // null if not provided
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 TotalBookings = 0,
@@ -266,8 +263,7 @@ public class ManualBookingService
             };
 
             _context.Customers.Add(customer);
-            _logger.LogInformation("Created new customer: {FirstName} {LastName}",
-                dto.FirstName, dto.LastName);
+            _logger.LogInformation("Created new customer: {FirstName} {LastName}", firstName, lastName);
         }
 
         return customer;
@@ -275,7 +271,6 @@ public class ManualBookingService
 
     private async Task<bool> IsSlotAvailableAsync(DateOnly date, TimeOnly startTime, TimeOnly endTime)
     {
-        // Check for conflicting bookings (excluding cancelled ones)
         var hasConflict = await _context.Bookings
             .AnyAsync(b =>
                 b.BookingDate == date &&
@@ -286,7 +281,6 @@ public class ManualBookingService
 
         if (hasConflict) return false;
 
-        // Check for blocked slots
         var isBlocked = await _context.BlockedTimeSlots
             .AnyAsync(bs =>
                 bs.BlockDate == date &&
