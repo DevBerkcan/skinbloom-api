@@ -9,7 +9,8 @@ public record CreateManualBookingDto(
     string LastName,
     string? Email,
     string? Phone,
-    string? CustomerNotes
+    string? CustomerNotes,
+    Guid? EmployeeId    
 );
 
 public record ManualBookingResponseDto(
@@ -18,11 +19,12 @@ public record ManualBookingResponseDto(
     string Status,
     bool ConfirmationSent,
     BookingDetailsDto Booking,
-    CustomerBasicDto Customer
+    CustomerBasicDto Customer,
+    EmployeeDto? Employee
 );
 
 public record CustomerBasicDto(
     string FirstName,
     string LastName,
-    string Email
+    string? Email
 );

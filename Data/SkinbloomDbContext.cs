@@ -21,6 +21,7 @@ public class SkinbloomDbContext : DbContext
     public DbSet<ServiceCategory> ServiceCategories { get; set; }
     public DbSet<PageView> PageViews { get; set; }
     public DbSet<LinkClick> LinkClicks { get; set; }
+    public DbSet<Employee> Employees { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,7 +64,7 @@ public class SkinbloomDbContext : DbContext
         {
             entity.HasOne(s => s.Category)
                   .WithMany(c => c.Services)
-                  .HasForeignKey(s => s.Id)
+                  .HasForeignKey(s => s.CategoryId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -76,19 +77,38 @@ public class SkinbloomDbContext : DbContext
             entity.HasIndex(e => e.IsActive);
         });
 
-        // Customer Configuration
+        modelBuilder.Entity<Employee>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Role).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Specialty).HasMaxLength(200);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.HasIndex(e => e.IsActive);
+        });
+
+
         modelBuilder.Entity<Customer>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
             entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.Phone).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Email).IsRequired(false).HasMaxLength(255);
+            entity.Property(e => e.Phone).IsRequired(false).HasMaxLength(50);
 
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.HasIndex(e => e.Phone);
+            // Filter indexes: unique only when value is NOT NULL
+            // (matches the DB constraints UQ_Customers_Email_NonNull / UQ_Customers_Phone_NonNull)
+            entity.HasIndex(e => e.Email)
+                  .IsUnique()
+                  .HasFilter("[Email] IS NOT NULL AND [Email] <> ''");
 
-            entity.Ignore(e => e.FullName); // Computed property
+            entity.HasIndex(e => e.Phone)
+                  .IsUnique()
+                  .HasFilter("[Phone] IS NOT NULL AND [Phone] <> ''");
+
+            entity.Ignore(e => e.FullName);
         });
 
         // Booking Configuration
@@ -115,7 +135,7 @@ public class SkinbloomDbContext : DbContext
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => new { e.BookingDate, e.Status });
 
-            entity.Ignore(e => e.BookingNumber); // Computed property
+
         });
 
         // BusinessHours Configuration

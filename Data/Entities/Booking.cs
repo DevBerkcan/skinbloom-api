@@ -1,3 +1,4 @@
+// Data/Entities/Booking.cs
 namespace BarberDario.Api.Data.Entities;
 
 public class Booking
@@ -5,6 +6,7 @@ public class Booking
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid CustomerId { get; set; }
     public Guid ServiceId { get; set; }
+    public Guid? EmployeeId { get; set; }
 
     // Termin-Details
     public DateOnly BookingDate { get; set; }
@@ -31,10 +33,12 @@ public class Booking
     // Navigation properties
     public Customer Customer { get; set; } = null!;
     public Service Service { get; set; } = null!;
+    public Employee? Employee { get; set; }
     public ICollection<EmailLog> EmailLogs { get; set; } = new List<EmailLog>();
 
     // Computed property
-    public string BookingNumber => $"BK-{BookingDate:yyyyMMdd}-{Id.ToString()[..8].ToUpper()}";
+    public static string GenerateBookingNumber(DateOnly date, Guid id)
+        => $"BK-{date:yyyyMMdd}-{id.ToString()[..8].ToUpper()}";
 }
 
 public enum BookingStatus

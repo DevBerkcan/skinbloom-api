@@ -1,3 +1,4 @@
+// DTOs/BookingDto.cs
 namespace BarberDario.Api.DTOs;
 
 public record CreateBookingDto(
@@ -5,14 +6,15 @@ public record CreateBookingDto(
     string BookingDate,  // YYYY-MM-DD
     string StartTime,    // HH:mm
     CustomerInfoDto Customer,
-    string? CustomerNotes
+    string? CustomerNotes,
+    Guid? EmployeeId     // optional – chosen employee
 );
 
 public record CustomerInfoDto(
     string FirstName,
     string LastName,
-    string Email,
-    string Phone
+    string? Email,
+    string? Phone
 );
 
 public record BookingResponseDto(
@@ -21,7 +23,8 @@ public record BookingResponseDto(
     string Status,
     bool ConfirmationSent,
     BookingDetailsDto Booking,
-    CustomerDto Customer
+    CustomerDto Customer,
+    EmployeeDto? Employee
 );
 
 public record BookingDetailsDto(
@@ -36,7 +39,14 @@ public record BookingDetailsDto(
 public record CustomerDto(
     string FirstName,
     string LastName,
-    string Email
+    string? Email
+);
+
+public record EmployeeDto(
+    Guid Id,
+    string Name,
+    string Role,
+    string? Specialty
 );
 
 public record CancelBookingDto(

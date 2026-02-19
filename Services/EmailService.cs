@@ -296,10 +296,6 @@ public class EmailService
                         </div>
                         
                         <div class='detail-row'>
-                            <span class='detail-label'>Buchungsnr.</span>
-                            <span class='detail-value'>{booking.BookingNumber}</span>
-                        </div>
-                        <div class='detail-row'>
                             <span class='detail-label'>Service</span>
                             <span class='detail-value'>{booking.Service.Name}</span>
                         </div>
@@ -379,7 +375,6 @@ vielen Dank für Ihre Buchung bei Skinbloom Aesthetics. Ihr Termin wurde erfolgr
 
 BUCHUNGSDETAILS:
 ------------------------------------------------
-Buchungsnummer: {booking.BookingNumber}
 Service: {booking.Service.Name}
 Datum: {booking.BookingDate:dd.MM.yyyy}
 Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr
@@ -481,7 +476,6 @@ AGB: {_emailOptions.BaseUrl}/agb";
                         
                         <div class='details'>
                             <h3>Ihre Buchungsdetails:</h3>
-                            <p><strong>Buchungsnummer:</strong> {booking.BookingNumber}</p>
                             <p><strong>Status:</strong> <span style='color: #28a745; font-weight: bold;'>Bestätigt</span></p>
                             <p><strong>Service:</strong> {service.Name}</p>
                             <p><strong>Datum:</strong> {booking.BookingDate:dd.MM.yyyy}</p>
@@ -499,7 +493,6 @@ AGB: {_emailOptions.BaseUrl}/agb";
             builder.TextBody = $@"
             Ihre Buchung wurde erfolgreich bestätigt - Skinbloom Aesthetics
             
-            Buchungsnummer: {booking.BookingNumber}
             Status: Bestätigt
             Service: {service.Name}
             Datum: {booking.BookingDate:dd.MM.yyyy}
@@ -798,10 +791,6 @@ AGB: {_emailOptions.BaseUrl}/agb";
                         </div>
                         
                         <div class='detail-row'>
-                            <span class='detail-label'>Buchungsnr.</span>
-                            <span class='detail-value'>{booking.BookingNumber}</span>
-                        </div>
-                        <div class='detail-row'>
                             <span class='detail-label'>Service</span>
                             <span class='detail-value'>{service.Name}</span>
                         </div>
@@ -883,7 +872,6 @@ Ihre Buchung bei Skinbloom Aesthetics wurde erfolgreich storniert.
 
 STORNIERTE BUCHUNG:
 ------------------------------------------------
-Buchungsnummer: {booking.BookingNumber}
 Service: {service.Name}
 Datum: {booking.BookingDate:dd.MM.yyyy}
 Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr

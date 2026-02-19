@@ -21,25 +21,48 @@ public class AdminService
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var now = DateTime.UtcNow;
 
-        // Today's bookings
         var todayBookings = await _context.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Service)
             .Where(b => b.BookingDate == today)
             .OrderBy(b => b.StartTime)
+            .Select(b => new
+            {
+                Booking = b,
+                CustomerName = b.Customer != null
+                    ? $"{b.Customer.FirstName ?? ""} {b.Customer.LastName ?? ""}".Trim()
+                    : "Unknown Customer",
+                CustomerEmail = b.Customer != null ? b.Customer.Email : null,
+                CustomerPhone = b.Customer != null ? b.Customer.Phone : null,
+                ServiceName = b.Service != null ? b.Service.Name : "Unknown Service",
+                ServicePrice = b.Service != null ? b.Service.Price : 0
+            })
             .ToListAsync();
 
         var todayOverview = new TodayOverviewDto(
             today.ToString("yyyy-MM-dd"),
             todayBookings.Count,
-            todayBookings.Count(b => b.Status == BookingStatus.Completed),
-            todayBookings.Count(b => b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed),
-            todayBookings.Count(b => b.Status == BookingStatus.Cancelled),
-            todayBookings.Where(b => b.Status == BookingStatus.Completed).Sum(b => b.Service.Price),
-            todayBookings.Select(b => MapToBookingListItem(b)).ToList()
+            todayBookings.Count(b => b.Booking.Status == BookingStatus.Completed),
+            todayBookings.Count(b => b.Booking.Status == BookingStatus.Pending || b.Booking.Status == BookingStatus.Confirmed),
+            todayBookings.Count(b => b.Booking.Status == BookingStatus.Cancelled),
+            todayBookings.Where(b => b.Booking.Status == BookingStatus.Completed).Sum(b => b.ServicePrice),
+            todayBookings.Select(b => new BookingListItemDto(
+                b.Booking.Id,
+                Booking.GenerateBookingNumber(b.Booking.BookingDate, b.Booking.Id),
+                b.Booking.Status.ToString(),
+                b.ServiceName,
+                b.CustomerName,
+                b.CustomerEmail,
+                b.CustomerPhone,
+                b.Booking.BookingDate.ToString("yyyy-MM-dd"),
+                b.Booking.StartTime.ToString("HH:mm"),
+                b.Booking.EndTime.ToString("HH:mm"),
+                b.ServicePrice,
+                b.Booking.CustomerNotes,
+                b.Booking.CreatedAt
+            )).ToList()
         );
 
-        // Next upcoming booking
         var nextBooking = await _context.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Service)
@@ -48,6 +71,17 @@ public class AdminService
                 (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed))
             .OrderBy(b => b.BookingDate)
             .ThenBy(b => b.StartTime)
+            .Select(b => new
+            {
+                b.Id,
+                b.BookingDate,
+                b.StartTime,
+                b.EndTime,
+                ServiceName = b.Service != null ? b.Service.Name : "Unknown Service",
+                CustomerName = b.Customer != null
+                    ? $"{b.Customer.FirstName ?? ""} {b.Customer.LastName ?? ""}".Trim()
+                    : "Unknown Customer"
+            })
             .FirstOrDefaultAsync();
 
         UpcomingBookingDto? upcomingBooking = null;
@@ -58,9 +92,9 @@ public class AdminService
 
             upcomingBooking = new UpcomingBookingDto(
                 nextBooking.Id,
-                nextBooking.BookingNumber,
-                nextBooking.Service.Name,
-                $"{nextBooking.Customer.FirstName} {nextBooking.Customer.LastName}",
+                Booking.GenerateBookingNumber(nextBooking.BookingDate, nextBooking.Id),
+                nextBooking.ServiceName,
+                nextBooking.CustomerName,
                 nextBooking.BookingDate.ToString("yyyy-MM-dd"),
                 nextBooking.StartTime.ToString("HH:mm"),
                 nextBooking.EndTime.ToString("HH:mm"),
@@ -68,7 +102,6 @@ public class AdminService
             );
         }
 
-        // Statistics
         var statistics = await GetDashboardStatisticsAsync();
 
         return new DashboardOverviewDto(todayOverview, upcomingBooking, statistics);
@@ -84,29 +117,36 @@ public class AdminService
         var thisMonthBookings = await _context.Bookings
             .Include(b => b.Service)
             .Where(b => b.CreatedAt >= startOfMonth && b.Status != BookingStatus.Cancelled)
+            .Select(b => new { b.Status, Price = b.Service != null ? b.Service.Price : 0 })
             .ToListAsync();
 
         var lastMonthBookings = await _context.Bookings
             .Include(b => b.Service)
             .Where(b => b.CreatedAt >= startOfLastMonth && b.CreatedAt <= endOfLastMonth && b.Status != BookingStatus.Cancelled)
+            .Select(b => new { b.Status, Price = b.Service != null ? b.Service.Price : 0 })
             .ToListAsync();
 
         var totalCustomers = await _context.Customers.CountAsync();
         var newCustomersThisMonth = await _context.Customers
             .CountAsync(c => c.CreatedAt >= startOfMonth);
 
-        // Load bookings first, then group in memory
         var completedBookings = await _context.Bookings
             .Include(b => b.Service)
-            .Where(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Confirmed)
+            .Where(b => (b.Status == BookingStatus.Completed || b.Status == BookingStatus.Confirmed) && b.Service != null)
+            .Select(b => new
+            {
+                ServiceId = b.Service.Id,
+                ServiceName = b.Service.Name,
+                Price = b.Service.Price
+            })
             .ToListAsync();
 
         var popularServices = completedBookings
-            .GroupBy(b => new { b.Service.Id, b.Service.Name })
+            .GroupBy(b => new { b.ServiceId, b.ServiceName })
             .Select(g => new PopularServiceDto(
-                g.Key.Name,
+                g.Key.ServiceName ?? "Unknown",
                 g.Count(),
-                g.Sum(b => b.Service.Price)
+                g.Sum(b => b.Price)
             ))
             .OrderByDescending(s => s.BookingCount)
             .Take(5)
@@ -114,18 +154,19 @@ public class AdminService
 
         var allCompletedBookings = await _context.Bookings
             .Include(b => b.Service)
-            .Where(b => b.Status == BookingStatus.Completed)
+            .Where(b => b.Status == BookingStatus.Completed && b.Service != null)
+            .Select(b => b.Service.Price)
             .ToListAsync();
 
         var avgBookingValue = allCompletedBookings.Any()
-            ? allCompletedBookings.Average(b => b.Service.Price)
+            ? allCompletedBookings.Average()
             : 0;
 
         return new DashboardStatisticsDto(
             thisMonthBookings.Count,
             lastMonthBookings.Count,
-            thisMonthBookings.Sum(b => b.Service.Price),
-            lastMonthBookings.Sum(b => b.Service.Price),
+            thisMonthBookings.Sum(b => b.Price),
+            lastMonthBookings.Sum(b => b.Price),
             totalCustomers,
             newCustomersThisMonth,
             avgBookingValue,
@@ -138,56 +179,75 @@ public class AdminService
         var query = _context.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Service)
+            .Select(b => new
+            {
+                Booking = b,
+                CustomerName = b.Customer != null
+                    ? $"{b.Customer.FirstName ?? ""} {b.Customer.LastName ?? ""}".Trim()
+                    : "Unknown Customer",
+                CustomerEmail = b.Customer != null ? b.Customer.Email : null,
+                CustomerPhone = b.Customer != null ? b.Customer.Phone : null,
+                ServiceName = b.Service != null ? b.Service.Name : "Unknown Service",
+                ServicePrice = b.Service != null ? b.Service.Price : 0
+            })
             .AsQueryable();
 
-        // Apply filters
         if (!string.IsNullOrEmpty(filter.Status))
         {
             if (Enum.TryParse<BookingStatus>(filter.Status, true, out var status))
-            {
-                query = query.Where(b => b.Status == status);
-            }
+                query = query.Where(x => x.Booking.Status == status);
         }
 
         if (filter.FromDate.HasValue)
         {
             var fromDate = DateOnly.FromDateTime(filter.FromDate.Value);
-            query = query.Where(b => b.BookingDate >= fromDate);
+            query = query.Where(x => x.Booking.BookingDate >= fromDate);
         }
 
         if (filter.ToDate.HasValue)
         {
             var toDate = DateOnly.FromDateTime(filter.ToDate.Value);
-            query = query.Where(b => b.BookingDate <= toDate);
+            query = query.Where(x => x.Booking.BookingDate <= toDate);
         }
 
         if (filter.ServiceId.HasValue)
-        {
-            query = query.Where(b => b.ServiceId == filter.ServiceId.Value);
-        }
+            query = query.Where(x => x.Booking.ServiceId == filter.ServiceId.Value);
 
         if (!string.IsNullOrEmpty(filter.SearchTerm))
         {
             var search = filter.SearchTerm.ToLower();
-            query = query.Where(b =>
-                b.BookingNumber.ToLower().Contains(search) ||
-                b.Customer.FirstName.ToLower().Contains(search) ||
-                b.Customer.LastName.ToLower().Contains(search) ||
-                b.Customer.Email.ToLower().Contains(search) ||
-                b.Customer.Phone.Contains(search)
+            query = query.Where(x =>
+                x.CustomerName.ToLower().Contains(search) ||
+                (x.CustomerEmail ?? "").ToLower().Contains(search) ||
+                (x.CustomerPhone ?? "").Contains(search) ||
+                x.ServiceName.ToLower().Contains(search)
             );
         }
 
         var totalCount = await query.CountAsync();
 
         var bookings = await query
-            .OrderByDescending(b => b.BookingDate)
-            .ThenByDescending(b => b.StartTime)
+            .OrderByDescending(x => x.Booking.BookingDate)
+            .ThenByDescending(x => x.Booking.StartTime)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
             .ToListAsync();
 
-        var items = bookings.Select(MapToBookingListItem).ToList();
+        var items = bookings.Select(x => new BookingListItemDto(
+            x.Booking.Id,
+            Booking.GenerateBookingNumber(x.Booking.BookingDate, x.Booking.Id),
+            x.Booking.Status.ToString(),
+            x.ServiceName,
+            x.CustomerName,
+            x.CustomerEmail,
+            x.CustomerPhone,
+            x.Booking.BookingDate.ToString("yyyy-MM-dd"),
+            x.Booking.StartTime.ToString("HH:mm"),
+            x.Booking.EndTime.ToString("HH:mm"),
+            x.ServicePrice,
+            x.Booking.CustomerNotes,
+            x.Booking.CreatedAt
+        )).ToList();
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize);
 
@@ -208,26 +268,18 @@ public class AdminService
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null)
-        {
             throw new ArgumentException("Buchung nicht gefunden");
-        }
 
-        // Parse status
         if (!Enum.TryParse<BookingStatus>(dto.Status, true, out var newStatus))
-        {
             throw new ArgumentException($"Ungültiger Status: {dto.Status}");
-        }
 
         var oldStatus = booking.Status;
         booking.Status = newStatus;
         booking.AdminNotes = dto.AdminNotes;
         booking.UpdatedAt = DateTime.UtcNow;
 
-        // Set specific timestamps based on status
         if (newStatus == BookingStatus.Cancelled && !booking.CancelledAt.HasValue)
-        {
             booking.CancelledAt = DateTime.UtcNow;
-        }
 
         await _context.SaveChangesAsync();
 
@@ -236,23 +288,25 @@ public class AdminService
             bookingId, oldStatus, newStatus
         );
 
-        return MapToBookingListItem(booking);
-    }
+        var customerName = booking.Customer != null
+            ? $"{booking.Customer.FirstName ?? ""} {booking.Customer.LastName ?? ""}".Trim()
+            : "Unknown Customer";
 
-    private BookingListItemDto MapToBookingListItem(Booking booking)
-    {
+        if (string.IsNullOrWhiteSpace(customerName))
+            customerName = "Unknown Customer";
+
         return new BookingListItemDto(
             booking.Id,
-            booking.BookingNumber,
+            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
             booking.Status.ToString(),
-            booking.Service.Name,
-            $"{booking.Customer.FirstName} {booking.Customer.LastName}",
-            booking.Customer.Email,
-            booking.Customer.Phone,
+            booking.Service?.Name ?? "Unknown Service",
+            customerName,
+            booking.Customer?.Email,
+            booking.Customer?.Phone,
             booking.BookingDate.ToString("yyyy-MM-dd"),
             booking.StartTime.ToString("HH:mm"),
             booking.EndTime.ToString("HH:mm"),
-            booking.Service.Price,
+            booking.Service?.Price ?? 0,
             booking.CustomerNotes,
             booking.CreatedAt
         );

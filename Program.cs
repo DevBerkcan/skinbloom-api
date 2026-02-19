@@ -38,6 +38,7 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<ReminderService>();
 builder.Services.AddScoped<ManualBookingService>();
+builder.Services.AddScoped<EmployeeService>();
 
 // Add Hangfire
 builder.Services.AddHangfire(configuration => configuration

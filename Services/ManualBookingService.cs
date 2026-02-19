@@ -81,7 +81,7 @@ public class ManualBookingService
 
         _logger.LogInformation(
             "Manual booking created: {BookingNumber} for customer {CustomerId} - {FirstName} {LastName}",
-            booking.BookingNumber,
+            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
             customer.Id,
             customer.FirstName,
             customer.LastName
@@ -117,7 +117,7 @@ public class ManualBookingService
 
         return new ManualBookingResponseDto(
             booking.Id,
-            booking.BookingNumber,
+            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
             booking.Status.ToString(),
             emailSent,
             new BookingDetailsDto(
@@ -132,6 +132,12 @@ public class ManualBookingService
                 customer.FirstName,
                 customer.LastName,
                 customer.Email ?? string.Empty
+            ),
+            new EmployeeDto(
+                booking.Employee?.Id ?? Guid.Empty,
+                booking.Employee?.Name ?? "N/A",
+                booking.Employee?.Role ?? "N/A",
+                booking.Employee?.Specialty ?? "N/A"
             )
         );
     }
@@ -147,7 +153,7 @@ public class ManualBookingService
 
         return new ManualBookingResponseDto(
             booking.Id,
-            booking.BookingNumber,
+            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
             booking.Status.ToString(),
             booking.ConfirmationSentAt.HasValue,
             new BookingDetailsDto(
@@ -162,6 +168,12 @@ public class ManualBookingService
                 booking.Customer.FirstName,
                 booking.Customer.LastName,
                 booking.Customer.Email ?? string.Empty
+            ),
+            new EmployeeDto(
+                booking.Employee?.Id ?? Guid.Empty,
+                booking.Employee?.Name ?? "N/A",
+                booking.Employee?.Role ?? "N/A",
+                booking.Employee?.Specialty ?? "N/A"
             )
         );
     }

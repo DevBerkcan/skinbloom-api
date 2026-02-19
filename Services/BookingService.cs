@@ -29,41 +29,39 @@ public class BookingService
         // 1. Validiere Service
         var service = await _context.Services.FindAsync(dto.ServiceId);
         if (service == null || !service.IsActive)
-        {
             throw new ArgumentException("Service nicht gefunden oder inaktiv");
-        }
 
         // 2. Parse Datum und Zeit
         var bookingDate = DateOnly.Parse(dto.BookingDate);
         var startTime = TimeOnly.Parse(dto.StartTime);
         var endTime = startTime.AddMinutes(service.DurationMinutes);
 
-        // 3. Prüfe ob Zeitslot noch verfügbar ist - MIT TRANSAKTION!
-        var isSlotAvailable = await IsSlotAvailableAsync(
-            dto.ServiceId,
-            bookingDate,
-            startTime,
-            endTime
-        );
-
+        // 3. Prüfe ob Zeitslot noch verfügbar ist
+        var isSlotAvailable = await IsSlotAvailableAsync(dto.ServiceId, bookingDate, startTime, endTime);
         if (!isSlotAvailable)
-        {
             throw new InvalidOperationException("Dieser Zeitslot ist bereits gebucht");
-        }
-
 
         var bookingDateTime = bookingDate.ToDateTime(startTime);
 
-        // 5. Prüfe maximalen Vorlauf
+        // 4. Prüfe maximalen Vorlauf
         var maxAdvanceDays = await GetSettingValueAsync("MAX_ADVANCE_BOOKING_DAYS", 60);
         if (bookingDate > DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(maxAdvanceDays)))
-        {
             throw new InvalidOperationException($"Termine können maximal {maxAdvanceDays} Tage im Voraus gebucht werden");
-        }
 
-        // 6. Finde oder erstelle Kunde
-        var customer = await _context.Customers
-            .FirstOrDefaultAsync(c => c.Email == dto.Customer.Email);
+        // 5. Normalize empty strings → null for Email/Phone
+        var email = string.IsNullOrWhiteSpace(dto.Customer.Email) ? null : dto.Customer.Email.Trim();
+        var phone = string.IsNullOrWhiteSpace(dto.Customer.Phone) ? null : dto.Customer.Phone.Trim();
+
+        // 6. Find or create customer (lookup by email OR phone)
+        Customer? customer = null;
+
+        if (email != null)
+            customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Email != null && c.Email == email);
+
+        if (customer == null && phone != null)
+            customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Phone != null && c.Phone == phone);
 
         if (customer == null)
         {
@@ -71,105 +69,99 @@ public class BookingService
             {
                 FirstName = dto.Customer.FirstName,
                 LastName = dto.Customer.LastName,
-                Email = dto.Customer.Email,
-                Phone = dto.Customer.Phone
+                Email = email,
+                Phone = phone
             };
             _context.Customers.Add(customer);
         }
         else
         {
-            // Update Kundendaten falls geändert
             customer.FirstName = dto.Customer.FirstName;
             customer.LastName = dto.Customer.LastName;
-            customer.Phone = dto.Customer.Phone;
+            if (email != null) customer.Email = email;
+            if (phone != null) customer.Phone = phone;
             customer.UpdatedAt = DateTime.UtcNow;
         }
 
-        // 7. NOCHMAL Prüfen - DIREKT VOR DEM SPEICHERN!
-        var finalCheck = await _context.Bookings
-            .AnyAsync(b =>
-                b.BookingDate == bookingDate &&
-                b.Status != BookingStatus.Cancelled &&
-                b.StartTime < endTime &&
-                b.EndTime > startTime
-            ); 
-
-        if (finalCheck)
+        // 7. Resolve employee (optional)
+        Employee? employee = null;
+        if (dto.EmployeeId.HasValue)
         {
-            throw new InvalidOperationException("Dieser Zeitslot wurde leider soeben von jemand anderem gebucht");
+            employee = await _context.Employees
+                .FirstOrDefaultAsync(e => e.Id == dto.EmployeeId && e.IsActive);
         }
 
         // 8. Erstelle Buchung
         var booking = new Booking
         {
+            Id = Guid.NewGuid(),
             CustomerId = customer.Id,
-            ServiceId = dto.ServiceId,
+            ServiceId = service.Id,
+            EmployeeId = employee?.Id,
             BookingDate = bookingDate,
             StartTime = startTime,
             EndTime = endTime,
-            Status = BookingStatus.Confirmed, 
+            Status = BookingStatus.Confirmed,
             CustomerNotes = dto.CustomerNotes,
-            ConfirmationSentAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         _context.Bookings.Add(booking);
 
-        // 9. Update Customer Stats
         customer.TotalBookings++;
         customer.LastVisit = DateTime.SpecifyKind(bookingDateTime, DateTimeKind.Utc);
+        customer.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
         _logger.LogInformation(
             "Booking created: {BookingId} for customer {Email} on {Date} at {Time}",
-            booking.Id, customer.Email, bookingDate, startTime
-        );
+            booking.Id, customer.Email, bookingDate, startTime);
 
-        // 10. Sende Bestätigungs-Email
-        bool emailSent = false;
-        try
+        // 9. Sende Bestätigungs-Email
+        if (!string.IsNullOrEmpty(customer.Email))
         {
-            await _emailService.SendBookingConfirmationAsync(booking.Id);
-            booking.ConfirmationSentAt = DateTime.UtcNow;
-
-            // Log Email
-            _context.EmailLogs.Add(new EmailLog
+            try
             {
-                BookingId = booking.Id,
-                RecipientEmail = customer.Email,
-                EmailType = EmailType.Confirmation,
-                SentAt = DateTime.UtcNow,
-                Status = EmailStatus.Sent
-            });
+                await _emailService.SendBookingConfirmationAsync(booking.Id);
+                booking.ConfirmationSentAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-            emailSent = true;
-
-            _logger.LogInformation("Confirmation email sent to {Email}", customer.Email);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send confirmation email to {Email}", customer.Email);
-
-            // Log Email Failure
-            _context.EmailLogs.Add(new EmailLog
+                _context.EmailLogs.Add(new EmailLog
+                {
+                    Id = Guid.NewGuid(),
+                    BookingId = booking.Id,
+                    RecipientEmail = customer.Email,
+                    EmailType = EmailType.Confirmation,
+                    SentAt = DateTime.UtcNow,
+                    Status = EmailStatus.Sent
+                });
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Confirmation email sent to {Email}", customer.Email);
+            }
+            catch (Exception ex)
             {
-                BookingId = booking.Id,
-                RecipientEmail = customer.Email,
-                EmailType = EmailType.Confirmation,
-                SentAt = DateTime.UtcNow,
-                Status = EmailStatus.Failed,
-                ErrorMessage = ex.Message
-            });
+                _logger.LogError(ex, "Failed to send confirmation email to {Email}", customer.Email);
 
-            await _context.SaveChangesAsync();
+                _context.EmailLogs.Add(new EmailLog
+                {
+                    Id = Guid.NewGuid(),
+                    BookingId = booking.Id,
+                    RecipientEmail = customer.Email,
+                    EmailType = EmailType.Confirmation,
+                    SentAt = null,
+                    Status = EmailStatus.Failed,
+                    ErrorMessage = ex.Message
+                });
+                await _context.SaveChangesAsync();
+            }
         }
 
         return new BookingResponseDto(
             booking.Id,
-            booking.BookingNumber,
+            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
             booking.Status.ToString(),
-            emailSent,
+            booking.ConfirmationSentAt.HasValue,
             new BookingDetailsDto(
                 service.Id,
                 service.Name,
@@ -178,11 +170,8 @@ public class BookingService
                 endTime.ToString("HH:mm"),
                 service.Price
             ),
-            new CustomerDto(
-                customer.FirstName,
-                customer.LastName,
-                customer.Email
-            )
+            new CustomerDto(customer.FirstName, customer.LastName, customer.Email),
+            employee == null ? null : new EmployeeDto(employee.Id, employee.Name, employee.Role, employee.Specialty)
         );
     }
 
@@ -197,7 +186,7 @@ public class BookingService
 
         return new BookingResponseDto(
             booking.Id,
-            booking.BookingNumber,
+            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
             booking.Status.ToString(),
             booking.ConfirmationSentAt.HasValue,
             new BookingDetailsDto(
@@ -212,6 +201,12 @@ public class BookingService
                 booking.Customer.FirstName,
                 booking.Customer.LastName,
                 booking.Customer.Email
+            ),
+            new EmployeeDto(
+                booking.Employee?.Id ?? Guid.Empty,
+                booking.Employee?.Name ?? "N/A",
+                booking.Employee?.Role ?? "N/A",
+                booking.Employee?.Specialty ?? "N/A"
             )
         );
     }
@@ -228,7 +223,7 @@ public class BookingService
 
         return bookings.Select(booking => new BookingResponseDto(
             booking.Id,
-            booking.BookingNumber,
+            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
             booking.Status.ToString(),
             booking.ConfirmationSentAt.HasValue,
             new BookingDetailsDto(
@@ -243,6 +238,12 @@ public class BookingService
                 booking.Customer.FirstName,
                 booking.Customer.LastName,
                 booking.Customer.Email
+            ),
+            new EmployeeDto(
+                booking.Employee?.Id ?? Guid.Empty,
+                booking.Employee?.Name ?? "N/A",
+                booking.Employee?.Role ?? "N/A",
+                booking.Employee?.Specialty ?? "N/A"
             )
         )).ToList();
     }
@@ -417,7 +418,7 @@ public class BookingService
         // 7. Return updated booking
         return new BookingResponseDto(
             booking.Id,
-            booking.BookingNumber,
+            Booking.GenerateBookingNumber(booking.BookingDate, booking.Id),
             booking.Status.ToString(),
             emailSent,
             new BookingDetailsDto(
@@ -432,6 +433,12 @@ public class BookingService
                 booking.Customer.FirstName,
                 booking.Customer.LastName,
                 booking.Customer.Email
+            ),
+           new EmployeeDto(
+                booking.Employee?.Id ?? Guid.Empty,
+                booking.Employee?.Name ?? "N/A",
+                booking.Employee?.Role ?? "N/A",
+                booking.Employee?.Specialty ?? "N/A"
             )
         );
     }
