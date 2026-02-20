@@ -59,351 +59,8 @@ public class EmailService
             var cancellationToken = GenerateCancellationToken(bookingId);
             var cancellationUrl = $"{_emailOptions.BaseUrl}/api/bookings/cancel/{cancellationToken}";
 
-            builder.HtmlBody = $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='utf-8'>
-            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-            <title>Buchungsbestätigung - Skinbloom Aesthetics</title>
-            <style>
-                body {{
-                    font-family: 'Helvetica', 'Arial', sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    background-color: #F5EDEB;
-                    color: #1E1E1E;
-                    line-height: 1.6;
-                }}
-                .container {{
-                    max-width: 600px;
-                    margin: 30px auto;
-                    background-color: #FFFFFF;
-                    border-radius: 24px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-                    overflow: hidden;
-                }}
-                .header {{
-                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
-                    padding: 40px 30px;
-                    text-align: center;
-                }}
-                .header h1 {{
-                    color: #FFFFFF;
-                    font-size: 28px;
-                    font-weight: 600;
-                    margin: 0;
-                    letter-spacing: 1px;
-                }}
-                .header p {{
-                    color: #FFFFFF;
-                    font-size: 16px;
-                    margin: 10px 0 0 0;
-                    opacity: 0.9;
-                }}
-                .content {{
-                    padding: 40px 30px;
-                }}
-                .greeting {{
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #1E1E1E;
-                    margin-bottom: 20px;
-                }}
-                .booking-card {{
-                    background-color: #F5EDEB;
-                    border-radius: 16px;
-                    padding: 30px;
-                    margin: 30px 0;
-                }}
-                .booking-title {{
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: #1E1E1E;
-                    margin-bottom: 20px;
-                    padding-bottom: 15px;
-                    border-bottom: 2px solid #E8C7C3;
-                }}
-                .detail-row {{
-                    display: flex;
-                    padding: 12px 0;
-                    border-bottom: 1px solid #E8C7C3;
-                }}
-                .detail-row:last-child {{
-                    border-bottom: none;
-                }}
-                .detail-label {{
-                    width: 120px;
-                    color: #8A8A8A;
-                    font-weight: 500;
-                }}
-                .detail-value {{
-                    flex: 1;
-                    color: #1E1E1E;
-                    font-weight: 600;
-                }}
-                .price {{
-                    color: #1E1E1E;
-                    font-size: 20px;
-                    font-weight: 700;
-                }}
-                .status-badge {{
-                    display: inline-block;
-                    background-color: #E8C7C3;
-                    color: #FFFFFF;
-                    padding: 6px 16px;
-                    border-radius: 40px;
-                    font-size: 14px;
-                    font-weight: 600;
-                    letter-spacing: 0.5px;
-                }}
-                .info-box {{
-                    background-color: #FFFFFF;
-                    border: 2px solid #E8C7C3;
-                    border-radius: 16px;
-                    padding: 24px;
-                    margin: 30px 0;
-                }}
-                .info-title {{
-                    color: #1E1E1E;
-                    font-weight: 700;
-                    margin-bottom: 16px;
-                    font-size: 18px;
-                }}
-                .info-list {{
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                }}
-                .info-list li {{
-                    padding: 8px 0;
-                    padding-left: 24px;
-                    position: relative;
-                    color: #8A8A8A;
-                }}
-                .info-list li:before {{
-                    content: '✧';
-                    color: #E8C7C3;
-                    position: absolute;
-                    left: 0;
-                    top: 8px;
-                    font-size: 14px;
-                }}
-                .cancel-section {{
-                    text-align: center;
-                    margin: 40px 0 20px;
-                    padding: 30px;
-                    background-color: #F5EDEB;
-                    border-radius: 16px;
-                }}
-                .cancel-title {{
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: #1E1E1E;
-                    margin-bottom: 10px;
-                }}
-                .cancel-text {{
-                    color: #8A8A8A;
-                    margin-bottom: 25px;
-                    font-size: 15px;
-                }}
-                .button {{
-                    display: inline-block;
-                    background: linear-gradient(135deg, #D8B0AC 0%, #C09995 100%);
-                    color: #FFFFFF;
-                    text-decoration: none;
-                    padding: 14px 32px;
-                    border-radius: 40px;
-                    font-weight: 600;
-                    font-size: 16px;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 4px 12px rgba(216,176,172,0.3);
-                    border: none;
-                    cursor: pointer;
-                }}
-                .button:hover {{
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 24px rgba(216,176,172,0.4);
-                }}
-                .footer {{
-                    background-color: #F5EDEB;
-                    padding: 30px;
-                    text-align: center;
-                    color: #8A8A8A;
-                    font-size: 14px;
-                }}
-                .footer-links {{
-                    margin-top: 20px;
-                }}
-                .footer-links a {{
-                    color: #8A8A8A;
-                    text-decoration: none;
-                    margin: 0 10px;
-                    font-size: 13px;
-                }}
-                .footer-links a:hover {{
-                    color: #E8C7C3;
-                    text-decoration: underline;
-                }}
-                .divider {{
-                    display: inline-block;
-                    color: #E8C7C3;
-                    margin: 0 5px;
-                }}
-                .address {{
-                    margin-top: 20px;
-                    font-style: normal;
-                }}
-                @media only screen and (max-width: 600px) {{
-                    .container {{
-                        margin: 20px;
-                        width: auto;
-                    }}
-                    .content {{
-                        padding: 30px 20px;
-                    }}
-                    .detail-row {{
-                        flex-direction: column;
-                    }}
-                    .detail-label {{
-                        width: 100%;
-                        margin-bottom: 5px;
-                    }}
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <div style='color: #FFFFFF; font-size: 48px; font-weight: 300; margin-bottom: 15px;'>✧</div>
-                    <h1>Skinbloom Aesthetics</h1>
-                    <p>Ihre Buchung ist bestätigt</p>
-                </div>
-                
-                <div class='content'>
-                    <div class='greeting'>
-                        Hallo {booking.Customer.FirstName},
-                    </div>
-                    
-                    <p style='color: #8A8A8A; margin-bottom: 30px;'>
-                        Vielen Dank für Ihre Buchung bei Skinbloom Aesthetics. Ihr Termin wurde erfolgreich bestätigt.
-                    </p>
-                    
-                    <div class='booking-card'>
-                        <div class='booking-title'>
-                            Buchungsdetails
-                            <span style='float: right;'><span class='status-badge'>Bestätigt</span></span>
-                        </div>
-                        
-                        <div class='detail-row'>
-                            <span class='detail-label'>Service</span>
-                            <span class='detail-value'>{booking.Service.Name}</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Datum</span>
-                            <span class='detail-value'>{booking.BookingDate:dd.MM.yyyy}</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Uhrzeit</span>
-                            <span class='detail-value'>{booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Dauer</span>
-                            <span class='detail-value'>{booking.Service.DurationMinutes} Minuten</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Preis</span>
-                            <span class='detail-value'><span class='price'>{booking.Service.Price:0.00} CHF</span></span>
-                        </div>
-                    </div>
-                    
-                    <div class='cancel-section'>
-                        <div class='cancel-title'>Termin stornieren?</div>
-                        <div class='cancel-text'>
-                            Falls Sie Ihren Termin nicht wahrnehmen können, stornieren Sie diesen bitte rechtzeitig.
-                        </div>
-                        <a href='{cancellationUrl}' class='button'>
-                            Termin stornieren
-                        </a>
-                        <p style='color: #8A8A8A; font-size: 12px; margin-top: 15px;'>
-                            Die Stornierung ist bis 24 Stunden vor dem Termin kostenlos möglich.
-                        </p>
-                    </div>
-                    
-                    <div style='text-align: center; margin-top: 30px;'>
-                        <p style='color: #8A8A8A; font-size: 14px;'>
-                            Haben Sie Fragen? Kontaktieren Sie uns gerne.
-                        </p>
-                    </div>
-                </div>
-                
-                <div class='footer'>
-                    <div style='font-size: 24px; color: #E8C7C3; margin-bottom: 15px;'>✧</div>
-                    <div style='font-weight: 600; color: #1E1E1E; margin-bottom: 10px;'>
-                        Skinbloom Aesthetics
-                    </div>
-                    <div class='address'>
-                        Elisabethenstrasse 41<br>
-                        4051 Basel, Schweiz
-                    </div>
-                    <div style='margin-top: 15px;'>
-                        Tel: +41 61 123 45 67<br>
-                        Email: info@skinbloom-aesthetics.ch
-                    </div>
-                    <div class='footer-links'>
-                        <a href='{_emailOptions.BaseUrl}/datenschutz'>Datenschutz</a>
-                        <span class='divider'>|</span>
-                        <a href='{_emailOptions.BaseUrl}/impressum'>Impressum</a>
-                        <span class='divider'>|</span>
-                        <a href='{_emailOptions.BaseUrl}/agb'>AGB</a>
-                    </div>
-                    <div style='margin-top: 20px; font-size: 12px;'>
-                        © {DateTime.UtcNow.Year} Skinbloom Aesthetics. Alle Rechte vorbehalten.
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>";
-
-            builder.TextBody = $@"
-SKINBLOOM AESTHETICS - IHRE BUCHUNGSBESTÄTIGUNG
-
-------------------------------------------------
-Hallo {booking.Customer.FirstName},
-
-vielen Dank für Ihre Buchung bei Skinbloom Aesthetics. Ihr Termin wurde erfolgreich bestätigt.
-
-BUCHUNGSDETAILS:
-------------------------------------------------
-Service: {booking.Service.Name}
-Datum: {booking.BookingDate:dd.MM.yyyy}
-Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr
-Dauer: {booking.Service.DurationMinutes} Minuten
-Preis: {booking.Service.Price:0.00} CHF
-Status: Bestätigt
-
-TERMIN STORNIEREN:
-------------------------------------------------
-Falls Sie Ihren Termin nicht wahrnehmen können:
-{cancellationUrl}
-
-Die Stornierung ist bis 24 Stunden vor dem Termin kostenlos möglich.
-
-KONTAKT:
-------------------------------------------------
-Skinbloom Aesthetics
-Elisabethenstrasse 41
-4051 Basel, Schweiz
-
-Tel: +41 61 123 45 67
-Email: info@skinbloom-aesthetics.ch
-Web: www.skinbloom-aesthetics.ch
-
-------------------------------------------------
-© {DateTime.UtcNow.Year} Skinbloom Aesthetics. Alle Rechte vorbehalten.
-Datenschutz: {_emailOptions.BaseUrl}/datenschutz
-Impressum: {_emailOptions.BaseUrl}/impressum
-AGB: {_emailOptions.BaseUrl}/agb";
+            builder.HtmlBody = GetConfirmationEmailHtml(booking, cancellationUrl);
+            builder.TextBody = GetConfirmationEmailText(booking, cancellationUrl);
 
             message.Body = builder.ToMessageBody();
 
@@ -452,58 +109,11 @@ AGB: {_emailOptions.BaseUrl}/agb";
             message.Subject = emailLog.Subject;
 
             var builder = new BodyBuilder();
+            var cancellationToken = GenerateCancellationToken(booking.Id);
+            var cancellationUrl = $"{_emailOptions.BaseUrl}/api/bookings/cancel/{cancellationToken}";
 
-            builder.HtmlBody = $@"
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body {{ font-family: Arial, sans-serif; line-height: 1.6; }}
-                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                    .header {{ background-color: #d4edda; padding: 20px; text-align: center; }}
-                    .content {{ padding: 20px; }}
-                    .details {{ margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }}
-                </style>
-            </head>
-            <body>
-                <div class='container'>
-                    <div class='header'>
-                        <h1>✅ Buchung erfolgreich bestätigt</h1>
-                    </div>
-                    <div class='content'>
-                        <p>Hallo {customer.FirstName},</p>
-                        <p>vielen Dank für die Bestätigung Ihrer Buchung bei Skinbloom Aesthetics.</p>
-                        
-                        <div class='details'>
-                            <h3>Ihre Buchungsdetails:</h3>
-                            <p><strong>Status:</strong> <span style='color: #28a745; font-weight: bold;'>Bestätigt</span></p>
-                            <p><strong>Service:</strong> {service.Name}</p>
-                            <p><strong>Datum:</strong> {booking.BookingDate:dd.MM.yyyy}</p>
-                            <p><strong>Uhrzeit:</strong> {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm}</p>
-                            <p><strong>Dauer:</strong> {service.DurationMinutes} Minuten</p>
-                            <p><strong>Preis:</strong> {service.Price:C}</p>
-                        </div>
-
-                        <p>Wir freuen uns auf Sie!</p>
-                    </div>
-                </div>
-            </body>
-            </html>";
-
-            builder.TextBody = $@"
-            Ihre Buchung wurde erfolgreich bestätigt - Skinbloom Aesthetics
-            
-            Status: Bestätigt
-            Service: {service.Name}
-            Datum: {booking.BookingDate:dd.MM.yyyy}
-            Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm}
-            Dauer: {service.DurationMinutes} Minuten
-            Preis: {service.Price:C}
-            
-            Wir freuen uns auf Sie!
-            
-            Skinbloom Aesthetics
-            Kontakt: +49 123 456789";
+            builder.HtmlBody = GetConfirmationReceiptHtml(booking, customer, service, cancellationUrl);
+            builder.TextBody = GetConfirmationReceiptText(booking, customer, service, cancellationUrl);
 
             message.Body = builder.ToMessageBody();
 
@@ -552,361 +162,8 @@ AGB: {_emailOptions.BaseUrl}/agb";
 
             var builder = new BodyBuilder();
 
-            builder.HtmlBody = $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='utf-8'>
-            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-            <title>Stornierung bestätigt - Skinbloom Aesthetics</title>
-            <style>
-                body {{
-                    font-family: 'Helvetica', 'Arial', sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    background-color: #F5EDEB;
-                    color: #1E1E1E;
-                    line-height: 1.6;
-                }}
-                .container {{
-                    max-width: 600px;
-                    margin: 30px auto;
-                    background-color: #FFFFFF;
-                    border-radius: 24px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-                    overflow: hidden;
-                }}
-                .header {{
-                    background: linear-gradient(135deg, #D8B0AC 0%, #C09995 100%);
-                    padding: 40px 30px;
-                    text-align: center;
-                }}
-                .header h1 {{
-                    color: #FFFFFF;
-                    font-size: 28px;
-                    font-weight: 600;
-                    margin: 0;
-                    letter-spacing: 1px;
-                }}
-                .header p {{
-                    color: #FFFFFF;
-                    font-size: 16px;
-                    margin: 10px 0 0 0;
-                    opacity: 0.9;
-                }}
-                .content {{
-                    padding: 40px 30px;
-                }}
-                .greeting {{
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #1E1E1E;
-                    margin-bottom: 20px;
-                }}
-                .cancellation-card {{
-                    background-color: #F5EDEB;
-                    border-radius: 16px;
-                    padding: 30px;
-                    margin: 30px 0;
-                    border-left: 4px solid #C09995;
-                }}
-                .cancellation-title {{
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: #1E1E1E;
-                    margin-bottom: 20px;
-                    padding-bottom: 15px;
-                    border-bottom: 2px solid #C09995;
-                }}
-                .detail-row {{
-                    display: flex;
-                    padding: 12px 0;
-                    border-bottom: 1px solid #E8C7C3;
-                }}
-                .detail-row:last-child {{
-                    border-bottom: none;
-                }}
-                .detail-label {{
-                    width: 120px;
-                    color: #8A8A8A;
-                    font-weight: 500;
-                }}
-                .detail-value {{
-                    flex: 1;
-                    color: #1E1E1E;
-                    font-weight: 600;
-                }}
-                .price {{
-                    color: #1E1E1E;
-                    font-size: 20px;
-                    font-weight: 700;
-                }}
-                .status-badge {{
-                    display: inline-block;
-                    background-color: #C09995;
-                    color: #FFFFFF;
-                    padding: 6px 16px;
-                    border-radius: 40px;
-                    font-size: 14px;
-                    font-weight: 600;
-                    letter-spacing: 0.5px;
-                }}
-                .info-box {{
-                    background-color: #FFFFFF;
-                    border: 2px solid #C09995;
-                    border-radius: 16px;
-                    padding: 24px;
-                    margin: 30px 0;
-                }}
-                .info-title {{
-                    color: #1E1E1E;
-                    font-weight: 700;
-                    margin-bottom: 16px;
-                    font-size: 18px;
-                }}
-                .info-list {{
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                }}
-                .info-list li {{
-                    padding: 8px 0;
-                    padding-left: 24px;
-                    position: relative;
-                    color: #8A8A8A;
-                }}
-                .info-list li:before {{
-                    content: '✧';
-                    color: #C09995;
-                    position: absolute;
-                    left: 0;
-                    top: 8px;
-                    font-size: 14px;
-                }}
-                .booking-section {{
-                    text-align: center;
-                    margin: 40px 0 20px;
-                    padding: 30px;
-                    background: linear-gradient(135deg, #F5EDEB 0%, #FFFFFF 100%);
-                    border-radius: 16px;
-                    border: 2px solid #E8C7C3;
-                }}
-                .booking-title {{
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: #1E1E1E;
-                    margin-bottom: 10px;
-                }}
-                .booking-text {{
-                    color: #8A8A8A;
-                    margin-bottom: 25px;
-                    font-size: 15px;
-                }}
-                .button {{
-                    display: inline-block;
-                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
-                    color: #FFFFFF;
-                    text-decoration: none;
-                    padding: 14px 32px;
-                    border-radius: 40px;
-                    font-weight: 600;
-                    font-size: 16px;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 4px 12px rgba(232,199,195,0.3);
-                    border: none;
-                    cursor: pointer;
-                }}
-                .button:hover {{
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 24px rgba(232,199,195,0.4);
-                }}
-                .footer {{
-                    background-color: #F5EDEB;
-                    padding: 30px;
-                    text-align: center;
-                    color: #8A8A8A;
-                    font-size: 14px;
-                }}
-                .footer-links {{
-                    margin-top: 20px;
-                }}
-                .footer-links a {{
-                    color: #8A8A8A;
-                    text-decoration: none;
-                    margin: 0 10px;
-                    font-size: 13px;
-                }}
-                .footer-links a:hover {{
-                    color: #C09995;
-                    text-decoration: underline;
-                }}
-                .divider {{
-                    display: inline-block;
-                    color: #C09995;
-                    margin: 0 5px;
-                }}
-                .address {{
-                    margin-top: 20px;
-                    font-style: normal;
-                }}
-                @media only screen and (max-width: 600px) {{
-                    .container {{
-                        margin: 20px;
-                        width: auto;
-                    }}
-                    .content {{
-                        padding: 30px 20px;
-                    }}
-                    .detail-row {{
-                        flex-direction: column;
-                    }}
-                    .detail-label {{
-                        width: 100%;
-                        margin-bottom: 5px;
-                    }}
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <div style='color: #FFFFFF; font-size: 48px; font-weight: 300; margin-bottom: 15px;'>✧</div>
-                    <h1>Skinbloom Aesthetics</h1>
-                    <p>Ihre Stornierung wurde bestätigt</p>
-                </div>
-                
-                <div class='content'>
-                    <div class='greeting'>
-                        Hallo {customer.FirstName},
-                    </div>
-                    
-                    <p style='color: #8A8A8A; margin-bottom: 30px;'>
-                        Ihre Buchung bei Skinbloom Aesthetics wurde erfolgreich storniert.
-                    </p>
-                    
-                    <div class='cancellation-card'>
-                        <div class='cancellation-title'>
-                            Stornierte Buchung
-                            <span style='float: right;'><span class='status-badge'>Storniert</span></span>
-                        </div>
-                        
-                        <div class='detail-row'>
-                            <span class='detail-label'>Service</span>
-                            <span class='detail-value'>{service.Name}</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Datum</span>
-                            <span class='detail-value'>{booking.BookingDate:dd.MM.yyyy}</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Uhrzeit</span>
-                            <span class='detail-value'>{booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Dauer</span>
-                            <span class='detail-value'>{service.DurationMinutes} Minuten</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Preis</span>
-                            <span class='detail-value'><span class='price'>{service.Price:0.00} CHF</span></span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Storniert am</span>
-                            <span class='detail-value'>{DateTime.UtcNow:dd.MM.yyyy HH:mm} Uhr</span>
-                        </div>
-                    </div>
-                    
-                    
-                    <div class='booking-section'>
-                        <div class='booking-title'>Neuen Termin buchen?</div>
-                        <div class='booking-text'>
-                            Wir freuen uns, Sie bald wieder bei uns begrüßen zu dürfen.
-                        </div>
-                        <a href='https://skinbloombooking.gentlegroup.de/booking' class='button'>
-                            Neuen Termin buchen
-                        </a>
-                    </div>
-                    
-                    <div style='text-align: center; margin-top: 30px;'>
-                        <p style='color: #8A8A8A; font-size: 14px;'>
-                            Wir hoffen, Sie bald wieder bei uns begrüßen zu dürfen.
-                        </p>
-                    </div>
-                </div>
-                
-                <div class='footer'>
-                    <div style='font-size: 24px; color: #C09995; margin-bottom: 15px;'>✧</div>
-                    <div style='font-weight: 600; color: #1E1E1E; margin-bottom: 10px;'>
-                        Skinbloom Aesthetics
-                    </div>
-                    <div class='address'>
-                        Elisabethenstrasse 41<br>
-                        4051 Basel, Schweiz
-                    </div>
-                    <div style='margin-top: 15px;'>
-                        Tel: +41 61 123 45 67<br>
-                        Email: info@skinbloom-aesthetics.ch
-                    </div>
-                    <div class='footer-links'>
-                        <a href='{_emailOptions.BaseUrl}/datenschutz'>Datenschutz</a>
-                        <span class='divider'>|</span>
-                        <a href='{_emailOptions.BaseUrl}/impressum'>Impressum</a>
-                        <span class='divider'>|</span>
-                        <a href='{_emailOptions.BaseUrl}/agb'>AGB</a>
-                    </div>
-                    <div style='margin-top: 20px; font-size: 12px;'>
-                        © {DateTime.UtcNow.Year} Skinbloom Aesthetics. Alle Rechte vorbehalten.
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>";
-
-            builder.TextBody = $@"
-SKINBLOOM AESTHETICS - IHRE STORNIERUNGSBESTÄTIGUNG
-
-------------------------------------------------
-Hallo {customer.FirstName},
-
-Ihre Buchung bei Skinbloom Aesthetics wurde erfolgreich storniert.
-
-STORNIERTE BUCHUNG:
-------------------------------------------------
-Service: {service.Name}
-Datum: {booking.BookingDate:dd.MM.yyyy}
-Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr
-Dauer: {service.DurationMinutes} Minuten
-Preis: {service.Price:0.00} CHF
-Status: Storniert
-Storniert am: {DateTime.UtcNow:dd.MM.yyyy HH:mm} Uhr
-
-INFORMATIONEN ZUR STORNIERUNG:
-------------------------------------------------
-• Die Stornierung wurde in unserem System erfasst
-• Sie erhalten keine weitere Bestätigung per Post
-• Bei bereits getätigten Zahlungen erfolgt die Rückerstattung innerhalb von 5-10 Werktagen
-• Bei Fragen kontaktieren Sie uns bitte direkt
-
-NEUEN TERMIN BUCHEN:
-------------------------------------------------
-Wir freuen uns, Sie bald wieder bei uns begrüßen zu dürfen.
-https://skinbloombooking.gentlegroup.de/booking
-
-KONTAKT:
-------------------------------------------------
-Skinbloom Aesthetics
-Elisabethenstrasse 41
-4051 Basel, Schweiz
-
-Tel: +41 61 123 45 67
-Email: info@skinbloom-aesthetics.ch
-Web: www.skinbloom-aesthetics.ch
-
-------------------------------------------------
-© {DateTime.UtcNow.Year} Skinbloom Aesthetics. Alle Rechte vorbehalten.
-Datenschutz: {_emailOptions.BaseUrl}/datenschutz
-Impressum: {_emailOptions.BaseUrl}/impressum
-AGB: {_emailOptions.BaseUrl}/agb";
+            builder.HtmlBody = GetCancellationEmailHtml(booking, customer, service);
+            builder.TextBody = GetCancellationEmailText(booking, customer, service);
 
             message.Body = builder.ToMessageBody();
 
@@ -933,6 +190,7 @@ AGB: {_emailOptions.BaseUrl}/agb";
         _context.EmailLogs.Add(emailLog);
         await _context.SaveChangesAsync();
     }
+
     public async Task SendBookingReminderAsync(Guid bookingId)
     {
         var booking = await _context.Bookings
@@ -964,48 +222,8 @@ AGB: {_emailOptions.BaseUrl}/agb";
             var cancellationToken = GenerateCancellationToken(bookingId);
             var cancellationUrl = $"{_emailOptions.BaseUrl}/api/bookings/cancel/{cancellationToken}";
 
-            builder.HtmlBody = $@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>
-                        body {{ font-family: Arial, sans-serif; line-height: 1.6; }}
-                        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                        .header {{ background-color: #fff3cd; padding: 20px; text-align: center; }}
-                        .button {{ display: inline-block; padding: 10px 20px; margin: 10px; 
-                                 background-color: #dc3545; color: white; text-decoration: none; 
-                                 border-radius: 5px; }}
-                    </style>
-                </head>
-                <body>
-                    <div class='container'>
-                        <div class='header'>
-                            <h2>📅 Terminerinnerung</h2>
-                        </div>
-                        <p>Hallo {booking.Customer.FirstName},</p>
-                        <p>dies ist eine freundliche Erinnerung an Ihren Termin morgen:</p>
-                        <p><strong>{booking.Service.Name}</strong><br>
-                           {booking.BookingDate:dd.MM.yyyy} um {booking.StartTime:HH:mm} Uhr</p>
-                        <p>Bitte erscheinen Sie pünktlich.</p>
-                        <p>Sollten Sie den Termin nicht wahrnehmen können, stornieren Sie bitte hier:</p>
-                        <a href='{cancellationUrl}' class='button'>Termin stornieren</a>
-                        <p>Wir freuen uns auf Sie!</p>
-                    </div>
-                </body>
-                </html>";
-
-            builder.TextBody = $@"
-                Terminerinnerung - Skinbloom Aesthetics
-
-                Termin: {booking.Service.Name}
-                Datum: {booking.BookingDate:dd.MM.yyyy}
-                Uhrzeit: {booking.StartTime:HH:mm}
-
-                Bitte erscheinen Sie pünktlich.
-
-                Stornierung: {cancellationUrl}
-
-                Skinbloom Aesthetics";
+            builder.HtmlBody = GetReminderEmailHtml(booking, cancellationUrl);
+            builder.TextBody = GetReminderEmailText(booking, cancellationUrl);
 
             message.Body = builder.ToMessageBody();
 
@@ -1033,6 +251,749 @@ AGB: {_emailOptions.BaseUrl}/agb";
         _context.EmailLogs.Add(emailLog);
         await _context.SaveChangesAsync();
     }
+
+    #region Email Templates
+
+    private string GetBaseEmailTemplate(string title, string content)
+    {
+        return $@"<!DOCTYPE html>
+<html lang='de'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <meta name='color-scheme' content='light dark'>
+    <meta name='supported-color-schemes' content='light dark'>
+    <title>{title}</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }}
+        
+        :root {{
+            color-scheme: light dark;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --accent-light: #f8f0ef;
+            --accent-primary: #C09995;
+            --accent-dark: #A87B77;
+            --button-gradient-start: #C09995;
+            --button-gradient-end: #A87B77;
+            --success-bg: #d4edda;
+            --success-text: #155724;
+            --success-border: #c3e6cb;
+            --warning-bg: #fff3cd;
+            --warning-text: #856404;
+            --warning-border: #ffeeba;
+            --info-bg: #eff6ff;
+            --info-text: #1e40af;
+            --info-border: #3b82f6;
+        }}
+        
+        @media (prefers-color-scheme: dark) {{
+            :root {{
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --text-primary: #e5e5e5;
+                --text-secondary: #a3a3a3;
+                --border-color: #404040;
+                --accent-light: #2d2d2d;
+                --accent-primary: #C09995;
+                --accent-dark: #A87B77;
+                --button-gradient-start: #C09995;
+                --button-gradient-end: #A87B77;
+                --success-bg: #1e3a2a;
+                --success-text: #a3e9a3;
+                --success-border: #2d5a2d;
+                --warning-bg: #3a3a1e;
+                --warning-text: #ffd700;
+                --warning-border: #5a5a2d;
+                --info-bg: #1e3a4a;
+                --info-text: #93c5fd;
+                --info-border: #60a5fa;
+            }}
+        }}
+        
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--bg-primary);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }}
+        
+        /* ── HEADER: always dark so white text is readable in both light & dark mode ── */
+        .header {{
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%);
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 3px solid #C09995;
+        }}
+        
+        .header-logo {{
+            color: #C09995;
+            font-size: 44px;
+            font-weight: 300;
+            margin-bottom: 16px;
+            display: block;
+            line-height: 1;
+        }}
+        
+        .header h1 {{
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.5px;
+        }}
+        
+        .header p {{
+            color: #C09995;
+            font-size: 14px;
+            margin: 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }}
+        
+        .content {{
+            padding: 40px 30px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }}
+        
+        .greeting {{
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }}
+        
+        .booking-card {{
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 1px solid var(--border-color);
+        }}
+        
+        .booking-title {{
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--accent-primary);
+        }}
+        
+        .detail-row {{
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }}
+        
+        .detail-row:last-child {{
+            border-bottom: none;
+        }}
+        
+        .detail-label {{
+            width: 120px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }}
+        
+        .detail-value {{
+            flex: 1;
+            color: var(--text-primary);
+            font-weight: 600;
+        }}
+        
+        .price {{
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 700;
+        }}
+        
+        .status-badge {{
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }}
+        
+        .status-badge.confirmed {{
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid var(--success-border);
+        }}
+        
+        .status-badge.cancelled {{
+            background-color: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid var(--warning-border);
+        }}
+        
+        .info-box {{
+            background-color: var(--info-bg);
+            border-left: 4px solid var(--info-border);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: var(--text-primary);
+        }}
+        
+        .info-box h3 {{
+            color: var(--info-text);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }}
+        
+        .info-box ul {{
+            margin-left: 20px;
+            color: var(--text-primary);
+        }}
+        
+        .info-box li {{
+            margin-bottom: 8px;
+        }}
+        
+        .cancel-section {{
+            text-align: center;
+            margin: 40px 0 20px;
+            padding: 30px;
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }}
+        
+        .cancel-title {{
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }}
+        
+        .cancel-text {{
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            font-size: 15px;
+        }}
+        
+        .button {{
+            display: inline-block;
+            background: linear-gradient(135deg, var(--button-gradient-start) 0%, var(--button-gradient-end) 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: none;
+            cursor: pointer;
+        }}
+        
+        .button-outline {{
+            background: transparent;
+            color: #C09995 !important;
+            border: 2px solid #C09995;
+            box-shadow: none;
+        }}
+        
+        /* ── FOOTER: always dark to match header ── */
+        .footer {{
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 100%);
+            padding: 30px;
+            text-align: center;
+            font-size: 14px;
+            border-top: 3px solid #C09995;
+        }}
+        
+        .footer-brand {{
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 15px;
+            margin-bottom: 8px;
+        }}
+        
+        .footer-address {{
+            color: #a3a3a3;
+            font-style: normal;
+            line-height: 1.7;
+            font-size: 13px;
+        }}
+        
+        .footer-contact {{
+            color: #a3a3a3;
+            margin-top: 12px;
+            font-size: 13px;
+        }}
+        
+        .footer-links {{
+            margin-top: 20px;
+        }}
+        
+        .footer-links a {{
+            color: #C09995;
+            text-decoration: none;
+            margin: 0 10px;
+            font-size: 12px;
+        }}
+        
+        .footer-links a:hover {{
+            text-decoration: underline;
+        }}
+        
+        .footer-divider {{
+            color: #404040;
+            margin: 0 5px;
+        }}
+        
+        .footer-copy {{
+            margin-top: 16px;
+            font-size: 11px;
+            color: #555555;
+        }}
+        
+        @media only screen and (max-width: 600px) {{
+            .container {{
+                margin: 10px;
+                width: auto;
+            }}
+            .content {{
+                padding: 30px 20px;
+            }}
+            .detail-row {{
+                flex-direction: column;
+            }}
+            .detail-label {{
+                width: 100%;
+                margin-bottom: 5px;
+            }}
+            .booking-card {{
+                padding: 20px;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div style='background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); padding: 40px 30px; text-align: center; border-bottom: 3px solid #C09995;'>
+            <div style='color: #C09995; font-size: 44px; font-weight: 300; margin-bottom: 16px; line-height: 1;'>✧</div>
+            <p style='color: #C09995; font-size: 26px; font-weight: 600; margin: 0 0 8px 0; letter-spacing: 0.5px; font-family: Arial, sans-serif;'>Skinbloom Aesthetics</p>
+            <p style='color: #C09995; font-size: 14px; margin: 0; letter-spacing: 1px; text-transform: uppercase; opacity: 0.9;'>Ihre Premium Beauty-Experience</p>
+        </div>
+        
+        <div class='content'>
+            {content}
+        </div>
+        
+        <div class='footer'>
+            <div style='color: #C09995; font-size: 22px; margin-bottom: 12px;'>✧</div>
+            <div class='footer-brand'>Skinbloom Aesthetics</div>
+            <div class='footer-address'>
+                Elisabethenstrasse 41<br>
+                4051 Basel, Schweiz
+            </div>
+            <div class='footer-contact'>
+                Tel: +41 61 123 45 67<br>
+                Email: info@skinbloom-aesthetics.ch
+            </div>
+            <div class='footer-links'>
+                <a href='{_emailOptions.BaseUrl}/datenschutz'>Datenschutz</a>
+                <span class='footer-divider'>|</span>
+                <a href='{_emailOptions.BaseUrl}/impressum'>Impressum</a>
+                <span class='footer-divider'>|</span>
+                <a href='{_emailOptions.BaseUrl}/agb'>AGB</a>
+            </div>
+            <div class='footer-copy'>
+                © {DateTime.UtcNow.Year} Skinbloom Aesthetics. Alle Rechte vorbehalten.
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
+    }
+
+    private string GetConfirmationEmailHtml(Booking booking, string cancellationUrl)
+    {
+        var content = $@"
+            <div class='greeting'>
+                Hallo {booking.Customer.FirstName},
+            </div>
+            
+            <p style='color: var(--text-secondary); margin-bottom: 30px;'>
+                Vielen Dank für Ihre Buchung bei Skinbloom Aesthetics. Ihr Termin wurde erfolgreich bestätigt.
+            </p>
+            
+            <div class='booking-card'>
+                <div class='booking-title'>
+                    Buchungsdetails
+                    <span style='float: right;'><span class='status-badge confirmed'>Bestätigt</span></span>
+                </div>
+                
+                <div class='detail-row'>
+                    <span class='detail-label'>Service</span>
+                    <span class='detail-value'>{booking.Service.Name}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Datum</span>
+                    <span class='detail-value'>{booking.BookingDate:dd.MM.yyyy}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Uhrzeit</span>
+                    <span class='detail-value'>{booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Dauer</span>
+                    <span class='detail-value'>{booking.Service.DurationMinutes} Minuten</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Preis</span>
+                    <span class='detail-value'><span class='price'>{booking.Service.Price:0.00} CHF</span></span>
+                </div>
+            </div>
+            
+            
+            <div class='cancel-section'>
+                <div class='cancel-title'>Termin stornieren?</div>
+                <div class='cancel-text'>
+                    Falls Sie Ihren Termin nicht wahrnehmen können, stornieren Sie diesen bitte rechtzeitig.
+                </div>
+                <a href='{cancellationUrl}' style='display: inline-block; background: linear-gradient(135deg, #C09995 0%, #A87B77 100%); color: #000000; text-decoration: none; padding: 14px 32px; border-radius: 40px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(0,2,3,0.15);'>Termin stornieren
+                </a>
+                <p style='color: var(--text-secondary); font-size: 12px; margin-top: 15px;'>
+                    Die Stornierung ist bis 24 Stunden vor dem Termin kostenlos möglich.
+                </p>
+            </div>";
+
+        return GetBaseEmailTemplate("Ihre Buchungsbestätigung", content);
+    }
+
+    private string GetConfirmationReceiptHtml(Booking booking, Customer customer, Service service, string cancellationUrl)
+    {
+        var content = $@"
+            <div class='greeting'>
+                Hallo {customer.FirstName},
+            </div>
+            
+            <p style='color: var(--text-secondary); margin-bottom: 30px;'>
+                Ihre Buchung wurde erfolgreich bestätigt. Hier sind Ihre Buchungsdetails:
+            </p>
+            
+            <div class='booking-card'>
+                <div class='booking-title'>
+                    Buchungsdetails
+                    <span style='float: right;'><span class='status-badge confirmed'>Bestätigt</span></span>
+                </div>
+                
+                <div class='detail-row'>
+                    <span class='detail-label'>Service</span>
+                    <span class='detail-value'>{service.Name}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Datum</span>
+                    <span class='detail-value'>{booking.BookingDate:dd.MM.yyyy}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Uhrzeit</span>
+                    <span class='detail-value'>{booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Dauer</span>
+                    <span class='detail-value'>{service.DurationMinutes} Minuten</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Preis</span>
+                    <span class='detail-value'><span class='price'>{service.Price:0.00} CHF</span></span>
+                </div>
+            </div>
+            
+            
+            <div class='cancel-section'>
+                <div class='cancel-title'>Termin verwalten</div>
+                <div class='cancel-text'>
+                    Sie können Ihren Termin hier stornieren, falls nötig.
+                </div>
+                <!--[if mso]>
+                <v:roundrect xmlns:v='urn:schemas-microsoft-com:vml' xmlns:w='urn:schemas-microsoft-com:office:word'
+                    href='{cancellationUrl}'
+                    style='height:48px;v-text-anchor:middle;width:220px;' arcsize='50%'
+                    strokecolor='#C09995' strokeweight='2pt' filled='f'>
+                    <w:anchorlock/>
+                    <center style='color:#C09995;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;'>Termin stornieren</center>
+                </v:roundrect>
+                <![endif]--><!--[if !mso]><!-->
+                <a href='{cancellationUrl}' style='display:inline-block;background:transparent;border:2px solid #C09995;border-radius:40px;color:#000000;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;padding:12px 30px;text-decoration:none;'>Termin stornieren</a>
+                <!--<![endif]-->
+            </div>";
+
+        return GetBaseEmailTemplate("Buchung bestätigt", content);
+    }
+
+    private string GetCancellationEmailHtml(Booking booking, Customer customer, Service service)
+    {
+        var content = $@"
+            <div class='greeting'>
+                Hallo {customer.FirstName},
+            </div>
+            
+            <p style='color: var(--text-secondary); margin-bottom: 30px;'>
+                Ihre Buchung bei Skinbloom Aesthetics wurde erfolgreich storniert.
+            </p>
+            
+            <div class='booking-card'>
+                <div class='booking-title'>
+                    Stornierte Buchung
+                    <span style='float: right;'><span class='status-badge cancelled'>Storniert</span></span>
+                </div>
+                
+                <div class='detail-row'>
+                    <span class='detail-label'>Service</span>
+                    <span class='detail-value'>{service.Name}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Datum</span>
+                    <span class='detail-value'>{booking.BookingDate:dd.MM.yyyy}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Uhrzeit</span>
+                    <span class='detail-value'>{booking.StartTime:HH:mm} Uhr</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Storniert am</span>
+                    <span class='detail-value'>{DateTime.UtcNow:dd.MM.yyyy HH:mm} Uhr</span>
+                </div>
+                {(!string.IsNullOrEmpty(booking.CancellationReason) ? $@"
+                <div class='detail-row'>
+                    <span class='detail-label'>Grund</span>
+                    <span class='detail-value'>{booking.CancellationReason}</span>
+                </div>" : "")}
+            </div>
+            
+            <div class='cancel-section'>
+                <div class='cancel-title'>Neuen Termin buchen?</div>
+                <div class='cancel-text'>
+                    Wir freuen uns, Sie bald wieder bei uns begrüßen zu dürfen.
+                </div>
+                <a href='{_emailOptions.BaseUrl}/booking' style='display: inline-block; background: linear-gradient(135deg, #3c3d3c, #A87B77 100%); color: #000000; text-decoration: none; padding: 14px 32px; border-radius: 40px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);'>Neuen Termin buchen
+                </a>
+            </div>";
+
+        return GetBaseEmailTemplate("Termin storniert", content);
+    }
+
+    private string GetReminderEmailHtml(Booking booking, string cancellationUrl)
+    {
+        var content = $@"
+            <div class='greeting'>
+                Hallo {booking.Customer.FirstName},
+            </div>
+            
+            <p style='color: var(--text-secondary); margin-bottom: 30px;'>
+                dies ist eine freundliche Erinnerung an Ihren morgigen Termin bei Skinbloom Aesthetics.
+            </p>
+            
+            <div class='booking-card'>
+                <div class='booking-title'>
+                    Termindetails
+                    <span style='float: right;'><span class='status-badge confirmed'>Bestätigt</span></span>
+                </div>
+                
+                <div class='detail-row'>
+                    <span class='detail-label'>Service</span>
+                    <span class='detail-value'>{booking.Service.Name}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Datum</span>
+                    <span class='detail-value'>{booking.BookingDate:dd.MM.yyyy}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Uhrzeit</span>
+                    <span class='detail-value'>{booking.StartTime:HH:mm} Uhr</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Dauer</span>
+                    <span class='detail-value'>{booking.Service.DurationMinutes} Minuten</span>
+                </div>
+            </div>
+            
+            <div class='info-box'>
+                <h3>Bitte beachten Sie:</h3>
+                <ul>
+                    <li>Bitte kommen Sie 5 Minuten vor Ihrem Termin</li>
+                    <li>Bei Verspätung kann es zu Verkürzungen der Behandlungszeit kommen</li>
+                </ul>
+            </div>
+            
+            <div class='cancel-section'>
+                <div class='cancel-title'>Termin absagen?</div>
+                <div class='cancel-text'>
+                    Falls Sie den Termin nicht wahrnehmen können, stornieren Sie bitte rechtzeitig.
+                </div>
+                <!--[if mso]>
+                <v:roundrect xmlns:v='urn:schemas-microsoft-com:vml' xmlns:w='urn:schemas-microsoft-com:office:word'
+                    href='{cancellationUrl}'
+                    style='height:48px;v-text-anchor:middle;width:220px;' arcsize='50%'
+                    strokecolor='#C09995' strokeweight='2pt' filled='f'>
+                    <w:anchorlock/>
+                    <center style='color:#C09995;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;'>Termin stornieren</center>
+                </v:roundrect>
+                <![endif]--><!--[if !mso]><!-->
+                <a href='{cancellationUrl}' style='display:inline-block;background:transparent;border:2px solid #3c3d3c;border-radius:40px;color:#000000;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;padding:12px 30px;text-decoration:none;'>Termin stornieren</a>
+                <!--<![endif]-->
+            </div>";
+
+        return GetBaseEmailTemplate("Terminerinnerung", content);
+    }
+
+    #endregion
+
+    #region Plain Text Versions
+
+    private string GetConfirmationEmailText(Booking booking, string cancellationUrl)
+    {
+        return $@"
+SKINBLOOM AESTHETICS - IHRE BUCHUNGSBESTÄTIGUNG
+
+------------------------------------------------
+Hallo {booking.Customer.FirstName},
+
+vielen Dank für Ihre Buchung bei Skinbloom Aesthetics. Ihr Termin wurde erfolgreich bestätigt.
+
+BUCHUNGSDETAILS:
+------------------------------------------------
+Service: {booking.Service.Name}
+Datum: {booking.BookingDate:dd.MM.yyyy}
+Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr
+Dauer: {booking.Service.DurationMinutes} Minuten
+Preis: {booking.Service.Price:0.00} CHF
+Status: Bestätigt
+
+
+TERMIN STORNIEREN:
+------------------------------------------------
+Falls Sie Ihren Termin nicht wahrnehmen können:
+{cancellationUrl}
+
+KONTAKT:
+------------------------------------------------
+Skinbloom Aesthetics
+Elisabethenstrasse 41
+4051 Basel, Schweiz
+
+Tel: +41 61 123 45 67
+Email: info@skinbloom-aesthetics.ch
+Web: www.skinbloom-aesthetics.ch
+
+------------------------------------------------
+© {DateTime.UtcNow.Year} Skinbloom Aesthetics. Alle Rechte vorbehalten.";
+    }
+
+    private string GetConfirmationReceiptText(Booking booking, Customer customer, Service service, string cancellationUrl)
+    {
+        return $@"
+SKINBLOOM AESTHETICS - BUCHUNG BESTÄTIGT
+
+------------------------------------------------
+Hallo {customer.FirstName},
+
+Ihre Buchung wurde erfolgreich bestätigt.
+
+BUCHUNGSDETAILS:
+------------------------------------------------
+Service: {service.Name}
+Datum: {booking.BookingDate:dd.MM.yyyy}
+Uhrzeit: {booking.StartTime:HH:mm} - {booking.EndTime:HH:mm} Uhr
+Dauer: {service.DurationMinutes} Minuten
+Preis: {service.Price:0.00} CHF
+Status: Bestätigt
+
+
+KONTAKT:
+------------------------------------------------
+Skinbloom Aesthetics
+Tel: +41 61 123 45 67
+Email: info@skinbloom-aesthetics.ch";
+    }
+
+    private string GetCancellationEmailText(Booking booking, Customer customer, Service service)
+    {
+        return $@"
+SKINBLOOM AESTHETICS - STORNIERUNGSBESTÄTIGUNG
+
+------------------------------------------------
+Hallo {customer.FirstName},
+
+Ihre Buchung wurde erfolgreich storniert.
+
+STORNIERTE BUCHUNG:
+------------------------------------------------
+Service: {service.Name}
+Datum: {booking.BookingDate:dd.MM.yyyy}
+Uhrzeit: {booking.StartTime:HH:mm} Uhr
+Storniert am: {DateTime.UtcNow:dd.MM.yyyy HH:mm} Uhr
+{(booking.CancellationReason != null ? $"Grund: {booking.CancellationReason}" : "")}
+
+NEUEN TERMIN BUCHEN:
+------------------------------------------------
+https://skinbloombooking.gentlegroup.de/booking
+
+KONTAKT:
+------------------------------------------------
+Skinbloom Aesthetics
+Tel: +41 61 123 45 67
+Email: info@skinbloom-aesthetics.ch";
+    }
+
+    private string GetReminderEmailText(Booking booking, string cancellationUrl)
+    {
+        return $@"
+SKINBLOOM AESTHETICS - TERMINERINNERUNG
+
+------------------------------------------------
+Hallo {booking.Customer.FirstName},
+
+dies ist eine freundliche Erinnerung an Ihren morgigen Termin.
+
+TERMINDETAILS:
+------------------------------------------------
+Service: {booking.Service.Name}
+Datum: {booking.BookingDate:dd.MM.yyyy}
+Uhrzeit: {booking.StartTime:HH:mm} Uhr
+Dauer: {booking.Service.DurationMinutes} Minuten
+
+WICHTIG:
+------------------------------------------------
+• Bitte kommen Sie 5 Minuten vor Ihrem Termin
+• Bei Verspätung kann es zu Verkürzungen kommen
+
+STORNIERUNG:
+------------------------------------------------
+{cancellationUrl}
+
+KONTAKT:
+------------------------------------------------
+Skinbloom Aesthetics
+Tel: +41 61 123 45 67";
+    }
+
+    #endregion
 
     private string GenerateConfirmationToken(Guid bookingId)
     {

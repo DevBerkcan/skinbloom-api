@@ -265,7 +265,7 @@ public class BookingsController : ControllerBase
                         overflow: hidden;
                     }
                     .header {
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         padding: 40px 20px;
                     }
                     .content {
@@ -288,7 +288,7 @@ public class BookingsController : ControllerBase
                     }
                     .button {
                         display: inline-block;
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         color: #FFFFFF;
                         text-decoration: none;
                         padding: 14px 32px;
@@ -313,7 +313,7 @@ public class BookingsController : ControllerBase
             <body>
                 <div class='container'>
                     <div class='header'>
-                        <div style='color: #FFFFFF; font-size: 48px; font-weight: 300; margin-bottom: 10px;'>✧</div>
+                        <div style='color: #C09995; font-size: 44px; font-weight: 300; margin-bottom: 12px;'>✧</div>
                         <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
                     </div>
                     <div class='content'>
@@ -361,7 +361,7 @@ public class BookingsController : ControllerBase
                         overflow: hidden;
                     }
                     .header {
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         padding: 40px 20px;
                     }
                     .content {
@@ -384,7 +384,7 @@ public class BookingsController : ControllerBase
                     }
                     .button {
                         display: inline-block;
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         color: #FFFFFF;
                         text-decoration: none;
                         padding: 14px 32px;
@@ -451,7 +451,7 @@ public class BookingsController : ControllerBase
                         overflow: hidden;
                     }}
                     .header {{
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         padding: 40px 20px;
                     }}
                     .content {{
@@ -509,7 +509,7 @@ public class BookingsController : ControllerBase
                     }}
                     .button {{
                         display: inline-block;
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         color: #FFFFFF;
                         text-decoration: none;
                         padding: 14px 32px;
@@ -530,7 +530,7 @@ public class BookingsController : ControllerBase
             <body>
                 <div class='container'>
                     <div class='header'>
-                        <div style='color: #FFFFFF; font-size: 48px; font-weight: 300; margin-bottom: 10px;'>✧</div>
+                        <div style='color: #C09995; font-size: 44px; font-weight: 300; margin-bottom: 12px;'>✧</div>
                         <h1 style='color: #FFFFFF; font-size: 28px; font-weight: 600; margin: 0;'>Skinbloom Aesthetics</h1>
                     </div>
                     <div class='content'>
@@ -603,7 +603,7 @@ public class BookingsController : ControllerBase
                         overflow: hidden;
                     }}
                     .header {{
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         padding: 40px 20px;
                     }}
                     .content {{
@@ -661,7 +661,7 @@ public class BookingsController : ControllerBase
                     }}
                     .button {{
                         display: inline-block;
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         color: #FFFFFF;
                         text-decoration: none;
                         padding: 14px 32px;
@@ -753,7 +753,7 @@ public class BookingsController : ControllerBase
                         overflow: hidden;
                     }}
                     .header {{
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         padding: 40px 20px;
                     }}
                     .content {{
@@ -776,7 +776,7 @@ public class BookingsController : ControllerBase
                     }}
                     .button {{
                         display: inline-block;
-                        background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                        background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                         color: #FFFFFF;
                         text-decoration: none;
                         padding: 14px 32px;
@@ -841,7 +841,7 @@ public class BookingsController : ControllerBase
                     overflow: hidden;
                 }}
                 .header {{
-                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                     padding: 40px 20px;
                 }}
                 .content {{
@@ -940,7 +940,7 @@ public class BookingsController : ControllerBase
                 }}
                 .button {{
                     display: inline-block;
-                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                     color: #FFFFFF;
                     text-decoration: none;
                     padding: 14px 32px;
@@ -1075,7 +1075,7 @@ public class BookingsController : ControllerBase
                     overflow: hidden;
                 }}
                 .header {{
-                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                     padding: 40px 20px;
                 }}
                 .content {{
@@ -1098,7 +1098,7 @@ public class BookingsController : ControllerBase
                 }}
                 .button {{
                     display: inline-block;
-                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                     color: #FFFFFF;
                     text-decoration: none;
                     padding: 14px 32px;
@@ -1166,7 +1166,7 @@ public class BookingsController : ControllerBase
                     overflow: hidden;
                 }}
                 .header {{
-                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                     padding: 40px 20px;
                 }}
                 .content {{
@@ -1189,7 +1189,7 @@ public class BookingsController : ControllerBase
                 }}
                 .button {{
                     display: inline-block;
-                    background: linear-gradient(135deg, #E8C7C3 0%, #D8B0AC 100%);
+                    background: linear-gradient(135deg, #1a1a1a 0%, #2d2824 50%, #1a1a1a 100%); border-bottom: 3px solid #C09995;
                     color: #FFFFFF;
                     text-decoration: none;
                     padding: 14px 32px;
