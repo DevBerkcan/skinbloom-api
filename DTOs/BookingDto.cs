@@ -1,13 +1,13 @@
-// DTOs/BookingDto.cs
+// BarberDario.Api/DTOs/BookingDtos.cs
 namespace BarberDario.Api.DTOs;
 
 public record CreateBookingDto(
     Guid ServiceId,
-    string BookingDate,  // YYYY-MM-DD
-    string StartTime,    // HH:mm
+    string BookingDate,      // YYYY-MM-DD
+    string StartTime,        // HH:mm
     CustomerInfoDto Customer,
     string? CustomerNotes,
-    Guid? EmployeeId     // optional – chosen employee
+    Guid? EmployeeId        // optional – chosen employee
 );
 
 public record CustomerInfoDto(

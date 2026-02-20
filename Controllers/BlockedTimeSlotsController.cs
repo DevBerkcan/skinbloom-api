@@ -1,77 +1,97 @@
-﻿// BarberDario.Api.Controllers/BlockedTimeSlotsController.cs
-using BarberDario.Api.Data.Entities;
-using BarberDario.Api.DTOs;
+﻿using BarberDario.Api.DTOs;
 using BarberDario.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BarberDario.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class BlockedTimeSlotsController : ControllerBase
 {
     private readonly BlockedTimeSlotService _blockedTimeSlotService;
     private readonly ILogger<BlockedTimeSlotsController> _logger;
+    private readonly IConfiguration _config;
 
     public BlockedTimeSlotsController(
         BlockedTimeSlotService blockedTimeSlotService,
-        ILogger<BlockedTimeSlotsController> logger)
+        ILogger<BlockedTimeSlotsController> logger,
+        IConfiguration config)
     {
         _blockedTimeSlotService = blockedTimeSlotService;
         _logger = logger;
+        _config = config;
     }
 
-    /// <summary>
-    /// Get all blocked time slots
-    /// </summary>
+    private Guid? GetCurrentEmployeeId() => JwtService.GetEmployeeId(User);
+
+    private bool IsAdminRequest()
+    {
+        var secret = _config["AdminBootstrapSecret"] ?? "skinbloom2026xyzABCDEFGHIJKLMNOP";
+        return Request.Headers.TryGetValue("X-Admin-Secret", out var val) && val == secret;
+    }
+
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<List<BlockedTimeSlotDto>>> GetBlockedTimeSlots(
         [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate)
+        [FromQuery] DateTime? endDate,
+        [FromQuery] bool all = false)
     {
+        var employeeId = IsAdminRequest() && all ? null : GetCurrentEmployeeId();
+
         var blockedSlots = await _blockedTimeSlotService.GetBlockedTimeSlotsAsync(
             DateOnly.FromDateTime(startDate ?? DateTime.MinValue),
-            DateOnly.FromDateTime(endDate ?? DateTime.MaxValue));
+            DateOnly.FromDateTime(endDate ?? DateTime.MaxValue),
+            employeeId);
+
         return Ok(blockedSlots);
     }
 
-    /// <summary>
-    /// Get blocked time slot by ID
-    /// </summary>
+    [HttpGet("by-date")]
+    [AllowAnonymous]
+    public async Task<ActionResult<List<BlockedTimeSlotDto>>> GetByDate(
+        [FromQuery] DateTime date,
+        [FromQuery] Guid? employeeId)
+    {
+        var dateOnly = DateOnly.FromDateTime(date);
+        var slots = await _blockedTimeSlotService.GetBlockedTimeSlotsAsync(
+            dateOnly, dateOnly, employeeId);
+        return Ok(slots);
+    }
+
     [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BlockedTimeSlotDto>> GetBlockedTimeSlot(Guid id)
     {
         var blockedSlot = await _blockedTimeSlotService.GetBlockedTimeSlotByIdAsync(id);
         if (blockedSlot == null)
-        {
             return NotFound(new { message = "Blocked time slot not found" });
+
+        if (!IsAdminRequest())
+        {
+            var empId = GetCurrentEmployeeId();
+            if (empId != null && blockedSlot.EmployeeId != empId)
+                return Forbid();
         }
+
         return Ok(blockedSlot);
     }
 
-    /// <summary>
-    /// Create a new blocked time slot
-    /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<BlockedTimeSlotDto>> CreateBlockedTimeSlot(
         [FromBody] CreateBlockedTimeSlotDto dto)
     {
+        var scopedDto = dto with { EmployeeId = GetCurrentEmployeeId() };
+
         try
         {
-            var blockedSlot = await _blockedTimeSlotService.CreateBlockedTimeSlotAsync(dto);
+            var blockedSlot = await _blockedTimeSlotService.CreateBlockedTimeSlotAsync(scopedDto);
             _logger.LogInformation("Blocked time slot created: {Id}", blockedSlot.Id);
 
             return CreatedAtAction(
                 nameof(GetBlockedTimeSlot),
                 new { id = blockedSlot.Id },
-                blockedSlot
-            );
+                blockedSlot);
         }
         catch (ArgumentException ex)
         {
@@ -83,17 +103,44 @@ public class BlockedTimeSlotsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Update a blocked time slot
-    /// </summary>
+    [HttpPost("range")]
+    public async Task<ActionResult<List<BlockedTimeSlotDto>>> CreateBlockedDateRange(
+        [FromBody] CreateBlockedDateRangeDto dto)
+    {
+        var scopedDto = dto with { EmployeeId = GetCurrentEmployeeId() };
+
+        try
+        {
+            var blockedSlots = await _blockedTimeSlotService.CreateBlockedDateRangeAsync(scopedDto);
+            _logger.LogInformation("Blocked time slots created in range: {Count} slots", blockedSlots.Count);
+            return Ok(blockedSlots);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
     [HttpPut("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BlockedTimeSlotDto>> UpdateBlockedTimeSlot(
         Guid id,
         [FromBody] UpdateBlockedTimeSlotDto dto)
     {
+        if (!IsAdminRequest())
+        {
+            var existing = await _blockedTimeSlotService.GetBlockedTimeSlotByIdAsync(id);
+            if (existing == null)
+                return NotFound(new { message = "Blocked time slot not found" });
+
+            var empId = GetCurrentEmployeeId();
+            if (empId != null && existing.EmployeeId != empId)
+                return Forbid();
+        }
+
         try
         {
             var blockedSlot = await _blockedTimeSlotService.UpdateBlockedTimeSlotAsync(id, dto);
@@ -109,40 +156,20 @@ public class BlockedTimeSlotsController : ControllerBase
         }
     }
 
-    // BarberDario.Api.Controllers/BlockedTimeSlotsController.cs
-
-    [HttpPost("range")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<List<BlockedTimeSlotDto>>> CreateBlockedDateRange(
-        [FromBody] CreateBlockedDateRangeDto dto)
-    {
-        try
-        {
-            var blockedSlots = await _blockedTimeSlotService.CreateBlockedDateRangeAsync(dto);
-            _logger.LogInformation("Blocked time slots created in range: {Count} slots", blockedSlots.Count);
-
-            return Ok(blockedSlots);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// Delete a blocked time slot
-    /// </summary>
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBlockedTimeSlot(Guid id)
     {
+        if (!IsAdminRequest())
+        {
+            var existing = await _blockedTimeSlotService.GetBlockedTimeSlotByIdAsync(id);
+            if (existing == null)
+                return NotFound(new { message = "Blocked time slot not found" });
+
+            var empId = GetCurrentEmployeeId();
+            if (empId != null && existing.EmployeeId != empId)
+                return Forbid();
+        }
+
         try
         {
             await _blockedTimeSlotService.DeleteBlockedTimeSlotAsync(id);

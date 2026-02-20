@@ -1,5 +1,4 @@
 ﻿// BarberDario.Api/DTOs/BlockedTimeSlotDtos.cs
-
 namespace BarberDario.Api.DTOs;
 
 public record BlockedTimeSlotDto(
@@ -8,24 +7,27 @@ public record BlockedTimeSlotDto(
     TimeOnly StartTime,
     TimeOnly EndTime,
     string? Reason,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    Guid? EmployeeId   // needed for ownership checks in the controller
 );
 
 // For single day blocking
 public record CreateBlockedTimeSlotDto(
-    string BlockDate,  // Format: "YYYY-MM-DD"
-    string StartTime,  // Format: "HH:mm"
-    string EndTime,    // Format: "HH:mm"
-    string? Reason
+    string BlockDate,              // Format: "YYYY-MM-DD"
+    string StartTime,              // Format: "HH:mm"
+    string EndTime,                // Format: "HH:mm"
+    string? Reason,
+    Guid? EmployeeId = null       // injected by controller from JWT claims
 );
 
-// NEW: For date range blocking
+// For date range blocking
 public record CreateBlockedDateRangeDto(
-    string FromDate,   // Format: "YYYY-MM-DD"
-    string ToDate,     // Format: "YYYY-MM-DD"
-    string StartTime,  // Format: "HH:mm"
-    string EndTime,    // Format: "HH:mm"
-    string? Reason
+    string FromDate,               // Format: "YYYY-MM-DD"
+    string ToDate,                 // Format: "YYYY-MM-DD"
+    string StartTime,              // Format: "HH:mm"
+    string EndTime,                // Format: "HH:mm"
+    string? Reason,
+    Guid? EmployeeId = null       // injected by controller from JWT claims
 );
 
 public record UpdateBlockedTimeSlotDto(

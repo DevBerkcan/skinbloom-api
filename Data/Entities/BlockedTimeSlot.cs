@@ -8,4 +8,6 @@ public class BlockedTimeSlot
     public TimeOnly EndTime { get; set; }
     public string? Reason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public Guid? EmployeeId { get; set; }
+    public Employee? Employee { get; set; }
 }

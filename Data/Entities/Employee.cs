@@ -11,5 +11,9 @@ public class Employee
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    public string? Username { get; set; } 
+    public string? PasswordHash { get; set; }
+
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+    public ICollection<BlockedTimeSlot> BlockedTimeSlots { get; set; } = new List<BlockedTimeSlot>();
 }
