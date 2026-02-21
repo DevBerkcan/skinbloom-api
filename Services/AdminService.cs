@@ -16,14 +16,21 @@ public class AdminService
         _logger = logger;
     }
 
-    public async Task<DashboardOverviewDto> GetDashboardOverviewAsync()
+    public async Task<DashboardOverviewDto> GetDashboardOverviewAsync(Guid? employeeId = null)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var now = DateTime.UtcNow;
 
-        var todayBookings = await _context.Bookings
+        // Base query with employee filter
+        var bookingsQuery = _context.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Service)
+            .AsQueryable();
+
+        if (employeeId.HasValue)
+            bookingsQuery = bookingsQuery.Where(b => b.EmployeeId == employeeId.Value);
+
+        var todayBookings = await bookingsQuery
             .Where(b => b.BookingDate == today)
             .OrderBy(b => b.StartTime)
             .Select(b => new
@@ -63,9 +70,7 @@ public class AdminService
             )).ToList()
         );
 
-        var nextBooking = await _context.Bookings
-            .Include(b => b.Customer)
-            .Include(b => b.Service)
+        var nextBooking = await bookingsQuery
             .Where(b =>
                 (b.BookingDate > today || (b.BookingDate == today && b.StartTime > TimeOnly.FromDateTime(now))) &&
                 (b.Status == BookingStatus.Pending || b.Status == BookingStatus.Confirmed))
@@ -102,36 +107,42 @@ public class AdminService
             );
         }
 
-        var statistics = await GetDashboardStatisticsAsync();
+        var statistics = await GetDashboardStatisticsAsync(employeeId);
 
         return new DashboardOverviewDto(todayOverview, upcomingBooking, statistics);
     }
 
-    public async Task<DashboardStatisticsDto> GetDashboardStatisticsAsync()
+    public async Task<DashboardStatisticsDto> GetDashboardStatisticsAsync(Guid? employeeId = null)
     {
         var now = DateTime.UtcNow;
         var startOfMonth = DateTime.SpecifyKind(new DateTime(now.Year, now.Month, 1), DateTimeKind.Utc);
         var startOfLastMonth = startOfMonth.AddMonths(-1);
         var endOfLastMonth = startOfMonth.AddDays(-1);
 
-        var thisMonthBookings = await _context.Bookings
+        // Base query with employee filter
+        var bookingsQuery = _context.Bookings
             .Include(b => b.Service)
+            .AsQueryable();
+
+        if (employeeId.HasValue)
+            bookingsQuery = bookingsQuery.Where(b => b.EmployeeId == employeeId.Value);
+
+        var thisMonthBookings = await bookingsQuery
             .Where(b => b.CreatedAt >= startOfMonth && b.Status != BookingStatus.Cancelled)
             .Select(b => new { b.Status, Price = b.Service != null ? b.Service.Price : 0 })
             .ToListAsync();
 
-        var lastMonthBookings = await _context.Bookings
-            .Include(b => b.Service)
+        var lastMonthBookings = await bookingsQuery
             .Where(b => b.CreatedAt >= startOfLastMonth && b.CreatedAt <= endOfLastMonth && b.Status != BookingStatus.Cancelled)
             .Select(b => new { b.Status, Price = b.Service != null ? b.Service.Price : 0 })
             .ToListAsync();
 
+        // Customers are global, not filtered by employee
         var totalCustomers = await _context.Customers.CountAsync();
         var newCustomersThisMonth = await _context.Customers
             .CountAsync(c => c.CreatedAt >= startOfMonth);
 
-        var completedBookings = await _context.Bookings
-            .Include(b => b.Service)
+        var completedBookings = await bookingsQuery
             .Where(b => (b.Status == BookingStatus.Completed || b.Status == BookingStatus.Confirmed) && b.Service != null)
             .Select(b => new
             {
@@ -152,8 +163,7 @@ public class AdminService
             .Take(5)
             .ToList();
 
-        var allCompletedBookings = await _context.Bookings
-            .Include(b => b.Service)
+        var allCompletedBookings = await bookingsQuery
             .Where(b => b.Status == BookingStatus.Completed && b.Service != null)
             .Select(b => b.Service.Price)
             .ToListAsync();
@@ -181,13 +191,18 @@ public class AdminService
             .Include(b => b.Service)
             .AsQueryable();
 
-        // Apply filters
+        // Apply employee filter if specified
+        if (filter.EmployeeId.HasValue)
+            query = query.Where(b => b.EmployeeId == filter.EmployeeId.Value);
+
+        // Apply status filter
         if (!string.IsNullOrEmpty(filter.Status))
         {
             if (Enum.TryParse<BookingStatus>(filter.Status, true, out var status))
                 query = query.Where(b => b.Status == status);
         }
 
+        // Apply date filters
         if (filter.FromDate.HasValue)
         {
             var fromDate = DateOnly.FromDateTime(filter.FromDate.Value);
@@ -200,10 +215,11 @@ public class AdminService
             query = query.Where(b => b.BookingDate <= toDate);
         }
 
+        // Apply service filter
         if (filter.ServiceId.HasValue)
             query = query.Where(b => b.ServiceId == filter.ServiceId.Value);
 
-        // Fix the search filter - use simple expressions that EF can translate
+        // Apply search filter
         if (!string.IsNullOrEmpty(filter.SearchTerm))
         {
             var search = filter.SearchTerm.ToLower();
@@ -323,7 +339,7 @@ public class AdminService
     {
         var booking = await _context.Bookings
             .Include(b => b.Customer)
-            .Include(b => b.EmailLogs) // Include related email logs
+            .Include(b => b.EmailLogs)
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null)

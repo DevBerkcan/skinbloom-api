@@ -31,12 +31,6 @@ public class BookingsController : ControllerBase
 
     private Guid? GetCurrentEmployeeId() => JwtService.GetEmployeeId(User);
 
-    private bool IsAdminRequest()
-    {
-        var secret = _config["AdminBootstrapSecret"] ?? "skinbloom-admin-bootstrap-2026";
-        return Request.Headers.TryGetValue("X-Admin-Secret", out var val) && val == secret;
-    }
-
     // ─────────────────────────────────────────────────────────────
     // PUBLIC ENDPOINTS
     // ─────────────────────────────────────────────────────────────
@@ -106,7 +100,7 @@ public class BookingsController : ControllerBase
             return NotFound(new { message = "Buchung nicht gefunden" });
 
         // Authenticated employees can only view their own bookings
-        if (User.Identity?.IsAuthenticated == true && !IsAdminRequest())
+        if (User.Identity?.IsAuthenticated == true)
         {
             var empId = GetCurrentEmployeeId();
             if (empId != null && booking.Employee?.Id != empId)
@@ -142,7 +136,7 @@ public class BookingsController : ControllerBase
     public async Task<ActionResult<List<BookingResponseDto>>> GetAllBookings(
         [FromQuery] bool all = false)
     {
-        var employeeId = IsAdminRequest() && all ? null : GetCurrentEmployeeId();
+        var employeeId = all ? null : GetCurrentEmployeeId();
         var bookings = await _bookingService.GetAllBookingsAsync(employeeId);
         return Ok(bookings);
     }
@@ -163,17 +157,14 @@ public class BookingsController : ControllerBase
     {
         dto ??= new CancelBookingDto(null, true);
 
-        // Ownership check
-        if (!IsAdminRequest())
-        {
-            var booking = await _bookingService.GetBookingByIdAsync(id);
-            if (booking == null)
+
+        var booking = await _bookingService.GetBookingByIdAsync(id);
+        if (booking == null)
                 return NotFound(new { message = "Buchung nicht gefunden" });
 
-            var empId = GetCurrentEmployeeId();
-            if (empId != null && booking.Employee?.Id != empId)
-                return Forbid();
-        }
+        var empId = GetCurrentEmployeeId();
+        if (empId != null && booking.Employee?.Id != empId)
+                return Forbid(); 
 
         try
         {

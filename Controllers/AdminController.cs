@@ -1,23 +1,31 @@
 using BarberDario.Api.DTOs;
 using BarberDario.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BarberDario.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize] 
 public class AdminController : ControllerBase
 {
     private readonly AdminService _adminService;
     private readonly ManualBookingService _manualBookingService;
     private readonly ILogger<AdminController> _logger;
 
-    public AdminController(AdminService adminService, ILogger<AdminController> logger, ManualBookingService manualBookingService)
+    public AdminController(
+        AdminService adminService,
+        ILogger<AdminController> logger,
+        ManualBookingService manualBookingService)
     {
         _adminService = adminService;
         _logger = logger;
         _manualBookingService = manualBookingService;
     }
+
+    // ── Helper to get current employee from JWT ──────────────────
+    private Guid? GetCurrentEmployeeId() => JwtService.GetEmployeeId(User);
 
     /// <summary>
     /// Get dashboard overview with today's bookings, next booking, and statistics
@@ -26,7 +34,8 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<DashboardOverviewDto>> GetDashboard()
     {
-        var dashboard = await _adminService.GetDashboardOverviewAsync();
+        var employeeId = GetCurrentEmployeeId();
+        var dashboard = await _adminService.GetDashboardOverviewAsync(employeeId);
         return Ok(dashboard);
     }
 
@@ -37,12 +46,14 @@ public class AdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<DashboardStatisticsDto>> GetStatistics()
     {
-        var statistics = await _adminService.GetDashboardStatisticsAsync();
+        var employeeId = GetCurrentEmployeeId();
+        var statistics = await _adminService.GetDashboardStatisticsAsync(employeeId);
         return Ok(statistics);
     }
 
     /// <summary>
     /// Get paginated list of bookings with filters
+    /// Pass ?all=true to see all employees' bookings (admin only)
     /// </summary>
     [HttpGet("bookings")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -53,9 +64,26 @@ public class AdminController : ControllerBase
         [FromQuery] Guid? serviceId,
         [FromQuery] string? searchTerm,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        [FromQuery] bool all = false)
     {
-        var filter = new BookingFilterDto(status, fromDate, toDate, serviceId, searchTerm, page, pageSize);
+        var currentEmployeeId = GetCurrentEmployeeId();
+
+        // If all=true, show all bookings (no filter)
+        // Otherwise show only current employee's bookings
+        Guid? employeeId = all ? null : currentEmployeeId;
+
+        var filter = new BookingFilterDto(
+            status,
+            fromDate,
+            toDate,
+            serviceId,
+            searchTerm,
+            page,
+            pageSize,
+            employeeId // Pass the employee filter
+        );
+
         var result = await _adminService.GetBookingsAsync(filter);
         return Ok(result);
     }

@@ -75,7 +75,8 @@ public record BookingFilterDto(
     Guid? ServiceId,
     string? SearchTerm,
     int Page = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    Guid? EmployeeId = null 
 );
 
 // Paginated Response
