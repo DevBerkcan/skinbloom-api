@@ -15,4 +15,6 @@ public class Customer
     public string? Notes { get; set; }
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public string FullName => $"{FirstName} {LastName}";
+    public Guid? EmployeeId { get; set; }
+    public Employee? Employee { get; set; }
 }

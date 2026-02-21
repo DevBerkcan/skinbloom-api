@@ -23,7 +23,7 @@ public record BookingResponseDto(
     string Status,
     bool ConfirmationSent,
     BookingDetailsDto Booking,
-    CustomerDto Customer,
+    CustomerToBookingDto Customer,
     EmployeeDto? Employee
 );
 
@@ -36,7 +36,7 @@ public record BookingDetailsDto(
     decimal Price
 );
 
-public record CustomerDto(
+public record CustomerToBookingDto(
     string FirstName,
     string LastName,
     string? Email

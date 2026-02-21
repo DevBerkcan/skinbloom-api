@@ -75,6 +75,7 @@ public class BookingService
                 LastName = dto.Customer.LastName,
                 Email = email,
                 Phone = phone,
+                EmployeeId = dto.EmployeeId
             };
             _context.Customers.Add(customer);
         }
@@ -436,7 +437,7 @@ public class BookingService
                 b.EndTime.ToString("HH:mm"),
                 service.Price
             ),
-            new CustomerDto(customer.FirstName, customer.LastName, customer.Email),
+            new CustomerToBookingDto(customer.FirstName, customer.LastName, customer.Email),
             employee == null
                 ? null
                 : new EmployeeDto(employee.Id, employee.Name, employee.Role, employee.Specialty)

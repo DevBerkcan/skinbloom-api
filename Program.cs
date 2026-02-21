@@ -108,7 +108,7 @@ builder.Services.AddScoped<ReminderService>();
 builder.Services.AddScoped<ManualBookingService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<JwtService>();
-
+builder.Services.AddScoped<CustomerService>();
 // Add Hangfire
 builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
