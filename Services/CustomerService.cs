@@ -76,6 +76,8 @@ public class CustomerService
         var query = _context.Customers
             .Include(c => c.Bookings)
                 .ThenInclude(b => b.Service)
+            .Include(c => c.Bookings)
+                .ThenInclude(b => b.Employee)
             .AsQueryable();
 
         // Check ownership if not admin
@@ -213,7 +215,8 @@ public class CustomerService
     public async Task DeleteCustomerAsync(Guid id, Guid? employeeId, bool isAdmin = false)
     {
         var query = _context.Customers
-            .Include(c => c.Bookings)
+            .Include(c => c.Bookings)  // Include bookings
+                .ThenInclude(b => b.EmailLogs)  // Include email logs for cascade
             .AsQueryable();
 
         // Check ownership if not admin
@@ -225,14 +228,47 @@ public class CustomerService
         if (customer == null)
             throw new ArgumentException("Kunde nicht gefunden");
 
-        // Check if customer has any bookings
-        if (customer.Bookings.Any())
-            throw new InvalidOperationException("Kunde kann nicht gelöscht werden, da er noch Buchungen hat");
+        // Start a transaction to ensure all deletes succeed or fail together
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        _context.Customers.Remove(customer);
-        await _context.SaveChangesAsync();
+        try
+        {
+            // Delete all bookings for this customer
+            if (customer.Bookings != null && customer.Bookings.Any())
+            {
+                _logger.LogInformation("Deleting {Count} bookings for customer {CustomerId}",
+                    customer.Bookings.Count, customer.Id);
 
-        _logger.LogInformation("Customer deleted: {CustomerId}", customer.Id);
+                // Delete all email logs for these bookings
+                foreach (var booking in customer.Bookings)
+                {
+                    if (booking.EmailLogs != null && booking.EmailLogs.Any())
+                    {
+                        _context.EmailLogs.RemoveRange(booking.EmailLogs);
+                    }
+                }
+
+                // Delete all bookings
+                _context.Bookings.RemoveRange(customer.Bookings);
+            }
+
+            // Delete the customer
+            _context.Customers.Remove(customer);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation(
+                "Customer deleted: {CustomerId} with {BookingCount} bookings",
+                customer.Id,
+                customer.Bookings?.Count ?? 0);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error deleting customer {CustomerId}", customer.Id);
+            throw new InvalidOperationException("Fehler beim Löschen des Kunden und seiner Buchungen", ex);
+        }
     }
 
     // ── SEARCH (for dropdown/autocomplete) ──────────────────────────────────
