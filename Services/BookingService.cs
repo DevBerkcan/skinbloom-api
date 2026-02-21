@@ -361,46 +361,74 @@ public class BookingService
 
     // ── Private helpers ───────────────────────────────────────────
 
-    /// <summary>
-    /// Check whether a time slot is available.
-    /// When employeeId is provided, conflicts are checked only within that employee's
-    /// bookings and blocked slots. Without an employee, checks all bookings globally.
-    /// </summary>
     private async Task<bool> IsSlotAvailableAsync(
         DateOnly date,
         TimeOnly startTime,
         TimeOnly endTime,
         Guid? employeeId = null)
     {
-        // Booking conflict check
-        var bookingQuery = _context.Bookings
-            .Where(b =>
-                b.BookingDate == date &&
-                b.Status != BookingStatus.Cancelled &&
-                b.StartTime < endTime &&
-                b.EndTime > startTime);
-
+        // CASE 1: Specific employee requested
         if (employeeId.HasValue)
-            bookingQuery = bookingQuery.Where(b => b.EmployeeId == employeeId.Value);
+        {
+            // Check for conflicting bookings for this specific employee
+            var hasBookingConflict = await _context.Bookings
+                .AnyAsync(b =>
+                    b.BookingDate == date &&
+                    b.EmployeeId == employeeId.Value &&
+                    b.Status != BookingStatus.Cancelled &&
+                    b.StartTime < endTime &&
+                    b.EndTime > startTime);
 
-        if (await bookingQuery.AnyAsync())
-            return false;
+            if (hasBookingConflict)
+                return false;
 
-        // Blocked slot conflict check — employee-scoped + any global slots (EmployeeId == null)
-        var blockedQuery = _context.BlockedTimeSlots
-            .Where(b =>
-                b.BlockDate == date &&
-                b.StartTime < endTime &&
-                b.EndTime > startTime);
+            // Check for blocked slots for this specific employee
+            var hasBlockedConflict = await _context.BlockedTimeSlots
+                .AnyAsync(bs =>
+                    bs.BlockDate == date &&
+                    bs.EmployeeId == employeeId.Value &&
+                    bs.StartTime < endTime &&
+                    bs.EndTime > startTime);
 
-        if (employeeId.HasValue)
-            blockedQuery = blockedQuery.Where(b =>
-                b.EmployeeId == employeeId.Value || b.EmployeeId == null);
+            return !hasBlockedConflict;
+        }
 
-        if (await blockedQuery.AnyAsync())
-            return false;
+        // CASE 2: No employee specified - check if ANY active employee is available
+        else
+        {
+            var activeEmployees = await _context.Employees
+                .Where(e => e.IsActive)
+                .Select(e => e.Id)
+                .ToListAsync();
 
-        return true;
+            foreach (var empId in activeEmployees)
+            {
+                // Check bookings for this employee
+                var hasBookingConflict = await _context.Bookings
+                    .AnyAsync(b =>
+                        b.BookingDate == date &&
+                        b.EmployeeId == empId &&
+                        b.Status != BookingStatus.Cancelled &&
+                        b.StartTime < endTime &&
+                        b.EndTime > startTime);
+
+                if (hasBookingConflict)
+                    continue;
+
+                // Check blocked slots for this employee
+                var hasBlockedConflict = await _context.BlockedTimeSlots
+                    .AnyAsync(bs =>
+                        bs.BlockDate == date &&
+                        bs.EmployeeId == empId &&
+                        bs.StartTime < endTime &&
+                        bs.EndTime > startTime);
+
+                if (!hasBlockedConflict)
+                    return true; // Found at least one available employee
+            }
+
+            return false; // No employee available
+        }
     }
 
     private async Task<int> GetSettingValueAsync(string key, int defaultValue)
