@@ -137,9 +137,12 @@ public class AdminService
             .Select(b => new { b.Status, Price = b.Service != null ? b.Service.Price : 0 })
             .ToListAsync();
 
-        // Customers are global, not filtered by employee
-        var totalCustomers = await _context.Customers.CountAsync();
-        var newCustomersThisMonth = await _context.Customers
+        var customersQuery = _context.Customers.AsQueryable();
+        if (employeeId.HasValue)
+            customersQuery = customersQuery.Where(c => c.EmployeeId == employeeId.Value);
+
+        var totalCustomers = await customersQuery.CountAsync();
+        var newCustomersThisMonth = await customersQuery
             .CountAsync(c => c.CreatedAt >= startOfMonth);
 
         var completedBookings = await bookingsQuery
