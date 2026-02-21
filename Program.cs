@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Skinbloom.Api.Options;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -109,7 +110,8 @@ builder.Services.AddScoped<ManualBookingService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<CustomerService>();
-// Add Hangfire
+builder.Services.AddSingleton<IHostedService, HangfireJobScheduler>();
+
 builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
@@ -157,6 +159,17 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    // Schedule daily reminders at 8:00 AM UTC
+    recurringJobManager.AddOrUpdate<ReminderService>(
+        "daily-reminders",
+        service => service.SendDailyRemindersAsync(),
+        Cron.Daily(8, 0));
+}
 
 // Hangfire Dashboard (only in development for security)
 if (app.Environment.IsDevelopment())
