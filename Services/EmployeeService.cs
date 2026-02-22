@@ -24,7 +24,7 @@ public class EmployeeService
 
         return await query
             .OrderBy(e => e.Name)
-            .Select(e => new EmployeeListItemDto(e.Id, e.Name, e.Role, e.Specialty, e.IsActive))
+            .Select(e => new EmployeeListItemDto(e.Id, e.Name, e.Role, e.Specialty, e.IsActive, e.Location))
             .ToListAsync();
     }
 
@@ -32,7 +32,7 @@ public class EmployeeService
     {
         var e = await _context.Employees.FindAsync(id);
         if (e == null) return null;
-        return new EmployeeListItemDto(e.Id, e.Name, e.Role, e.Specialty, e.IsActive);
+        return new EmployeeListItemDto(e.Id, e.Name, e.Role, e.Specialty, e.IsActive, e.Location);
     }
 
     public async Task<EmployeeListItemDto> CreateAsync(CreateEmployeeDto dto)
@@ -46,7 +46,7 @@ public class EmployeeService
         _context.Employees.Add(employee);
         await _context.SaveChangesAsync();
         _logger.LogInformation("Created employee {Name}", employee.Name);
-        return new EmployeeListItemDto(employee.Id, employee.Name, employee.Role, employee.Specialty, employee.IsActive);
+        return new EmployeeListItemDto(employee.Id, employee.Name, employee.Role, employee.Specialty, employee.IsActive, employee.Location);
     }
 
     public async Task<EmployeeListItemDto?> UpdateAsync(Guid id, UpdateEmployeeDto dto)
@@ -61,7 +61,7 @@ public class EmployeeService
         employee.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        return new EmployeeListItemDto(employee.Id, employee.Name, employee.Role, employee.Specialty, employee.IsActive);
+        return new EmployeeListItemDto(employee.Id, employee.Name, employee.Role, employee.Specialty, employee.IsActive, employee.Location);
     }
 
     public async Task<bool> DeleteAsync(Guid id)

@@ -10,7 +10,7 @@ namespace BarberDario.Api.Controllers;
 
 [ApiController]
 [Route("api/employees")]
-[Authorize] // Add this to require authentication for all endpoints
+[Authorize]
 public class EmployeesController : ControllerBase
 {
     private readonly SkinbloomDbContext _context;
@@ -25,11 +25,9 @@ public class EmployeesController : ControllerBase
     // ── Helper to get current employee ────────────────────────────
     private Guid? GetCurrentEmployeeId() => JwtService.GetEmployeeId(User);
 
-
     // ── GET /api/employees ────────────────────────────────────────
-    // AllowAnonymous: the public booking widget calls this to list stylists.
     [HttpGet]
-    [AllowAnonymous] // Keep this public for the booking widget
+    [AllowAnonymous]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true)
     {
         var query = _context.Employees.AsQueryable();
@@ -43,6 +41,7 @@ public class EmployeesController : ControllerBase
                 e.Name,
                 e.Role,
                 e.Specialty,
+                e.Location,  // Added location
                 e.IsActive,
                 e.CreatedAt,
                 e.UpdatedAt,
@@ -56,7 +55,7 @@ public class EmployeesController : ControllerBase
 
     // ── GET /api/employees/{id} ───────────────────────────────────
     [HttpGet("{id:guid}")]
-    [AllowAnonymous] // Keep this public
+    [AllowAnonymous]
     public async Task<IActionResult> GetById(Guid id)
     {
         var e = await _context.Employees.FindAsync(id);
@@ -68,6 +67,7 @@ public class EmployeesController : ControllerBase
             e.Name,
             e.Role,
             e.Specialty,
+            e.Location,  // Added location
             e.IsActive,
             e.CreatedAt,
             e.UpdatedAt,
@@ -81,7 +81,6 @@ public class EmployeesController : ControllerBase
     public async Task<IActionResult> GetStats(Guid id,
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
-        // Optional: Check if user has access to this employee's stats
         var currentUserId = GetCurrentEmployeeId();
 
         var exists = await _context.Employees.AnyAsync(e => e.Id == id);
@@ -109,7 +108,6 @@ public class EmployeesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
     {
-
         if (string.IsNullOrWhiteSpace(request.Name))
             return BadRequest(new { message = "Name ist erforderlich" });
 
@@ -126,6 +124,7 @@ public class EmployeesController : ControllerBase
             Name = request.Name.Trim(),
             Role = request.Role?.Trim() ?? "Mitarbeiterin",
             Specialty = request.Specialty?.Trim(),
+            Location = request.Location?.Trim(),  // Added location
             IsActive = true,
             Username = request.Username?.Trim().ToLower(),
             PasswordHash = !string.IsNullOrWhiteSpace(request.Password)
@@ -144,6 +143,7 @@ public class EmployeesController : ControllerBase
             employee.Name,
             employee.Role,
             employee.Specialty,
+            employee.Location,  // Added location
             employee.IsActive,
             employee.Username,
             HasPassword = employee.PasswordHash != null,
@@ -168,6 +168,7 @@ public class EmployeesController : ControllerBase
         if (!string.IsNullOrWhiteSpace(request.Name)) employee.Name = request.Name.Trim();
         if (!string.IsNullOrWhiteSpace(request.Role)) employee.Role = request.Role.Trim();
         if (request.Specialty != null) employee.Specialty = request.Specialty.Trim();
+        if (request.Location != null) employee.Location = request.Location.Trim();  // Added location
         if (request.IsActive.HasValue) employee.IsActive = request.IsActive.Value;
 
         if (!string.IsNullOrWhiteSpace(request.NewPassword))
@@ -184,6 +185,7 @@ public class EmployeesController : ControllerBase
             employee.Name,
             employee.Role,
             employee.Specialty,
+            employee.Location,  // Added location
             employee.IsActive,
             employee.Username,
             HasPassword = employee.PasswordHash != null,
@@ -208,7 +210,6 @@ public class EmployeesController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-
         if (await _context.Bookings.AnyAsync(b => b.EmployeeId == id))
             return Conflict(new
             {

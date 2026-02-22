@@ -6,20 +6,23 @@ public record EmployeeListItemDto(
     string Name,
     string Role,
     string? Specialty,
-    bool IsActive
+    bool IsActive,
+    string? Location
 );
 
 public record CreateEmployeeDto(
     string Name,
     string Role,
-    string? Specialty
+    string? Specialty,
+    string? Location
 );
 
 public record UpdateEmployeeDto(
     string Name,
     string Role,
     string? Specialty,
-    bool IsActive
+    bool IsActive,
+    string? Location
 );
 
 public record CreateEmployeeRequest(
@@ -27,7 +30,8 @@ public record CreateEmployeeRequest(
     string? Role,
     string? Specialty,
     string? Username,
-    string? Password      
+    string? Password,
+    string? Location
 );
 
 public record UpdateEmployeeRequest(
@@ -36,7 +40,8 @@ public record UpdateEmployeeRequest(
     string? Specialty,
     string? Username,
     bool? IsActive,
-    string? NewPassword  
+    string? NewPassword,
+    string? Location
 );
 
 public record LoginRequest(string Username, string Password);
