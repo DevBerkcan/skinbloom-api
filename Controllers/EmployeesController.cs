@@ -1,5 +1,4 @@
-﻿// BarberDario.Api.Controllers/EmployeesController.cs
-using BarberDario.Api.Data;
+﻿using BarberDario.Api.Data;
 using BarberDario.Api.Data.Entities;
 using BarberDario.Api.DTOs;
 using BarberDario.Api.Services;
@@ -11,6 +10,7 @@ namespace BarberDario.Api.Controllers;
 
 [ApiController]
 [Route("api/employees")]
+[Authorize] // Add this to require authentication for all endpoints
 public class EmployeesController : ControllerBase
 {
     private readonly SkinbloomDbContext _context;
@@ -22,13 +22,14 @@ public class EmployeesController : ControllerBase
         _config = config;
     }
 
+    // ── Helper to get current employee ────────────────────────────
+    private Guid? GetCurrentEmployeeId() => JwtService.GetEmployeeId(User);
+
+
     // ── GET /api/employees ────────────────────────────────────────
     // AllowAnonymous: the public booking widget calls this to list stylists.
-    // activeOnly=false is only useful for the admin — but since we can't gate
-    // the query param, the worst case is a public caller sees inactive names.
-    // If that's a concern, remove activeOnly support and always return active.
     [HttpGet]
-    [AllowAnonymous]
+    [AllowAnonymous] // Keep this public for the booking widget
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true)
     {
         var query = _context.Employees.AsQueryable();
@@ -55,7 +56,7 @@ public class EmployeesController : ControllerBase
 
     // ── GET /api/employees/{id} ───────────────────────────────────
     [HttpGet("{id:guid}")]
-    [AllowAnonymous]
+    [AllowAnonymous] // Keep this public
     public async Task<IActionResult> GetById(Guid id)
     {
         var e = await _context.Employees.FindAsync(id);
@@ -77,10 +78,12 @@ public class EmployeesController : ControllerBase
 
     // ── GET /api/employees/{id}/stats ─────────────────────────────
     [HttpGet("{id:guid}/stats")]
-    [Authorize]
     public async Task<IActionResult> GetStats(Guid id,
         [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
+        // Optional: Check if user has access to this employee's stats
+        var currentUserId = GetCurrentEmployeeId();
+
         var exists = await _context.Employees.AnyAsync(e => e.Id == id);
         if (!exists) return NotFound();
 
@@ -104,9 +107,9 @@ public class EmployeesController : ControllerBase
 
     // ── POST /api/employees ───────────────────────────────────────
     [HttpPost]
-    [Authorize]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
     {
+
         if (string.IsNullOrWhiteSpace(request.Name))
             return BadRequest(new { message = "Name ist erforderlich" });
 
@@ -116,9 +119,6 @@ public class EmployeesController : ControllerBase
             if (await _context.Employees.AnyAsync(e => e.Username == username))
                 return Conflict(new { message = "Benutzername bereits vergeben" });
         }
-
-        if (!string.IsNullOrWhiteSpace(request.Password) && request.Password.Length < 8)
-            return BadRequest(new { message = "Passwort muss mindestens 8 Zeichen haben" });
 
         var employee = new Employee
         {
@@ -152,7 +152,6 @@ public class EmployeesController : ControllerBase
 
     // ── PUT /api/employees/{id} ───────────────────────────────────
     [HttpPut("{id:guid}")]
-    [Authorize]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeRequest request)
     {
         var employee = await _context.Employees.FindAsync(id);
@@ -173,13 +172,6 @@ public class EmployeesController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(request.NewPassword))
         {
-            var adminSecret = _config["AdminBootstrapSecret"] ?? "skinbloom-admin-bootstrap-2026";
-            if (!Request.Headers.TryGetValue("X-Admin-Secret", out var provided) || provided != adminSecret)
-                return Forbid();
-
-            if (request.NewPassword.Length < 8)
-                return BadRequest(new { message = "Passwort muss mindestens 8 Zeichen haben" });
-
             employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
         }
 
@@ -200,7 +192,6 @@ public class EmployeesController : ControllerBase
 
     // ── PATCH /api/employees/{id}/toggle-active ───────────────────
     [HttpPatch("{id:guid}/toggle-active")]
-    [Authorize]
     public async Task<IActionResult> ToggleActive(Guid id)
     {
         var employee = await _context.Employees.FindAsync(id);
@@ -215,9 +206,9 @@ public class EmployeesController : ControllerBase
 
     // ── DELETE /api/employees/{id} ────────────────────────────────
     [HttpDelete("{id:guid}")]
-    [Authorize]
     public async Task<IActionResult> Delete(Guid id)
     {
+
         if (await _context.Bookings.AnyAsync(b => b.EmployeeId == id))
             return Conflict(new
             {
