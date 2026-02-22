@@ -89,6 +89,16 @@ public class CustomerService
         if (customer == null)
             return null;
 
+        // Calculate NoShowCount from bookings
+        var noShowCount = customer.Bookings.Count(b => b.Status == BookingStatus.NoShow);
+
+        // Optional: Update the customer entity if the count doesn't match
+        if (customer.NoShowCount != noShowCount)
+        {
+            customer.NoShowCount = noShowCount;
+            await _context.SaveChangesAsync();
+        }
+
         var recentBookings = customer.Bookings
             .OrderByDescending(b => b.BookingDate)
             .ThenByDescending(b => b.StartTime)
