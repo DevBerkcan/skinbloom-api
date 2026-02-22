@@ -33,9 +33,12 @@ public class RevenueStatisticsDto
     public decimal TodayRevenue { get; set; }
     public decimal WeekRevenue { get; set; }
     public decimal MonthRevenue { get; set; }
+    public decimal AllTimeRevenue { get; set; }
+
     public int TodayBookings { get; set; }
     public int WeekBookings { get; set; }
     public int MonthBookings { get; set; }
+    public int AllTimeBookings { get; set; }
 }
 
 public class TrackPageViewDto

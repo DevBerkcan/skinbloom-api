@@ -45,6 +45,7 @@ public class TrackingController : ControllerBase
 
     /// <summary>
     /// Get simplified tracking statistics
+    /// If no date filters are provided, returns ALL TIME statistics
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -52,18 +53,19 @@ public class TrackingController : ControllerBase
         [FromQuery] DateTime? fromDate,
         [FromQuery] DateTime? toDate)
     {
-        var startDate = fromDate ?? DateTime.UtcNow.AddDays(-30);
-        var endDate = toDate ?? DateTime.UtcNow;
+        // If no dates provided, get ALL data
+        var queryFromDate = fromDate ?? DateTime.MinValue;  // All time from beginning
+        var queryToDate = toDate ?? DateTime.UtcNow;        // Up to now
 
         // Total page views
         var totalPageViews = await _context.PageViews
-            .Where(p => p.ViewedAt >= startDate && p.ViewedAt <= endDate)
+            .Where(p => p.ViewedAt >= queryFromDate && p.ViewedAt <= queryToDate)
             .CountAsync();
 
         // Total bookings and revenue
         var bookings = await _context.Bookings
             .Include(b => b.Service)
-            .Where(b => b.CreatedAt >= startDate && b.CreatedAt <= endDate
+            .Where(b => b.CreatedAt >= queryFromDate && b.CreatedAt <= queryToDate
                         && b.Status != Data.Entities.BookingStatus.Cancelled)
             .ToListAsync();
 
@@ -75,12 +77,12 @@ public class TrackingController : ControllerBase
 
         // Total link clicks
         var totalLinkClicks = await _context.LinkClicks
-            .Where(l => l.ClickedAt >= startDate && l.ClickedAt <= endDate)
+            .Where(l => l.ClickedAt >= queryFromDate && l.ClickedAt <= queryToDate)
             .CountAsync();
 
         // Link click statistics grouped by link name
         var linkClicks = await _context.LinkClicks
-            .Where(l => l.ClickedAt >= startDate && l.ClickedAt <= endDate)
+            .Where(l => l.ClickedAt >= queryFromDate && l.ClickedAt <= queryToDate)
             .GroupBy(l => l.LinkName)
             .Select(g => new
             {
@@ -97,7 +99,7 @@ public class TrackingController : ControllerBase
             LinkName = x.LinkName,
             ClickCount = x.ClickCount,
             Percentage = totalClicksForPercentage > 0
-                ? (double)x.ClickCount / totalClicksForPercentage * 100
+                ? Math.Round((double)x.ClickCount / totalClicksForPercentage * 100, 1)
                 : 0
         }).ToList();
 
@@ -107,7 +109,7 @@ public class TrackingController : ControllerBase
             TotalPageViews = totalPageViews,
             TotalLinkClicks = totalLinkClicks,
             TotalRevenue = totalRevenue,
-            AverageBookingValue = averageBookingValue,
+            AverageBookingValue = Math.Round(averageBookingValue, 2),
             LinkClicks = linkClickStats
         };
 
@@ -115,7 +117,7 @@ public class TrackingController : ControllerBase
     }
 
     /// <summary>
-    /// Get revenue statistics
+    /// Get revenue statistics for different time periods
     /// </summary>
     [HttpGet("revenue")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -124,6 +126,7 @@ public class TrackingController : ControllerBase
         var today = DateTime.UtcNow.Date;
         var weekAgo = today.AddDays(-7);
         var monthAgo = today.AddDays(-30);
+        var allTimeStart = DateTime.MinValue; // All time
 
         // Today's bookings
         var todayBookings = await _context.Bookings
@@ -146,20 +149,28 @@ public class TrackingController : ControllerBase
                         && b.Status != Data.Entities.BookingStatus.Cancelled)
             .ToListAsync();
 
+        // ALL TIME bookings
+        var allTimeBookings = await _context.Bookings
+            .Include(b => b.Service)
+            .Where(b => b.Status != Data.Entities.BookingStatus.Cancelled)
+            .ToListAsync();
+
         var result = new RevenueStatisticsDto
         {
-            TodayRevenue = todayBookings.Sum(b => b.Service?.Price ?? 0),
+            TodayRevenue = Math.Round(todayBookings.Sum(b => b.Service?.Price ?? 0), 2),
             TodayBookings = todayBookings.Count,
-            WeekRevenue = weekBookings.Sum(b => b.Service?.Price ?? 0),
+            WeekRevenue = Math.Round(weekBookings.Sum(b => b.Service?.Price ?? 0), 2),
             WeekBookings = weekBookings.Count,
-            MonthRevenue = monthBookings.Sum(b => b.Service?.Price ?? 0),
-            MonthBookings = monthBookings.Count
+            MonthRevenue = Math.Round(monthBookings.Sum(b => b.Service?.Price ?? 0), 2),
+            MonthBookings = monthBookings.Count,
+            AllTimeRevenue = Math.Round(allTimeBookings.Sum(b => b.Service?.Price ?? 0), 2),
+            AllTimeBookings = allTimeBookings.Count
         };
 
         return Ok(result);
     }
 
-    [HttpPost("pageview")] 
+    [HttpPost("pageview")]
     public async Task<IActionResult> TrackPageView([FromBody] TrackPageViewDto dto)
     {
         try
@@ -189,7 +200,7 @@ public class TrackingController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error tracking page view");
-            return Ok(new { success = false, error = ex.Message }); 
+            return Ok(new { success = false, error = ex.Message });
         }
     }
 }
