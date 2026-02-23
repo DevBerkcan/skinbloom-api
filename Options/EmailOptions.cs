@@ -8,5 +8,5 @@ public class EmailOptions
     public string SmtpPassword { get; set; } = string.Empty;
     public string SenderEmail { get; set; } = string.Empty;
     public string SenderName { get; set; } = "Skinbloom Aesthetics";
-    public string BaseUrl { get; set; } = "https://skinbloom.runasp.net";
+    public string BaseUrl { get; set; } = "https://skinbloombooking.gentlegroup.de";
 }
