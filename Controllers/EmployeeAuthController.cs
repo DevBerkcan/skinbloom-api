@@ -1,9 +1,8 @@
 ﻿using BarberDario.Api.Data;
 using BarberDario.Api.DTOs;
-using BarberDario.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Skinbloom.Api.Services;
 
 namespace BarberDario.Api.Controllers;
 
@@ -11,20 +10,14 @@ namespace BarberDario.Api.Controllers;
 [Route("api/employee-auth")]
 public class EmployeeAuthController : ControllerBase
 {
-    private readonly SkinbloomDbContext _context;
-    private readonly JwtService _jwt;
-    private readonly IConfiguration _config;
+    private readonly EmployeeAuthService _authService;
     private readonly ILogger<EmployeeAuthController> _logger;
 
     public EmployeeAuthController(
-        SkinbloomDbContext context,
-        JwtService jwt,
-        IConfiguration config,
+        EmployeeAuthService authService,
         ILogger<EmployeeAuthController> logger)
     {
-        _context = context;
-        _jwt = jwt;
-        _config = config;
+        _authService = authService;
         _logger = logger;
     }
 
@@ -32,42 +25,12 @@ public class EmployeeAuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Username) ||
-            string.IsNullOrWhiteSpace(request.Password))
-            return BadRequest(new { message = "Benutzername und Passwort sind erforderlich" });
+        var (success, result, errorMessage) = await _authService.LoginAsync(request);
 
-        var employee = await _context.Employees
-            .Where(e => e.IsActive && e.Username == request.Username.Trim().ToLower())
-            .FirstOrDefaultAsync();
+        if (!success)
+            return Unauthorized(new { message = errorMessage });
 
-        bool passwordOk = employee != null
-            && !string.IsNullOrEmpty(employee.PasswordHash)
-            && BCrypt.Net.BCrypt.Verify(request.Password, employee.PasswordHash);
-
-        if (!passwordOk || employee == null)
-        {
-            _logger.LogWarning("Failed login attempt for username: {Username}", request.Username);
-            return Unauthorized(new { message = "Ungültiger Benutzername oder Passwort" });
-        }
-
-        var token = _jwt.GenerateToken(
-            employee.Id, employee.Name, employee.Username!, employee.Role);
-
-        _logger.LogInformation("Employee {Name} logged in successfully", employee.Name);
-
-        return Ok(new
-        {
-            success = true,
-            token = token,
-            employee = new
-            {
-                employee.Id,
-                employee.Name,
-                employee.Username,
-                employee.Role,
-                employee.Specialty
-            }
-        });
+        return Ok(result);
     }
 
     [HttpPost("logout")]
@@ -81,66 +44,39 @@ public class EmployeeAuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Me()
     {
-        var employeeId = JwtService.GetEmployeeId(User);
-        if (employeeId == null)
-            return Unauthorized(new { message = "Nicht angemeldet" });
+        var (success, result, errorMessage) = await _authService.GetCurrentEmployeeAsync(User);
 
-        var employee = await _context.Employees
-            .Where(e => e.Id == employeeId && e.IsActive)
-            .Select(e => new { e.Id, e.Name, e.Username, e.Role, e.Specialty })
-            .FirstOrDefaultAsync();
+        if (!success)
+            return Unauthorized(new { message = errorMessage });
 
-        if (employee == null)
-            return Unauthorized(new { message = "Mitarbeiter nicht gefunden oder deaktiviert" });
-
-        return Ok(new { success = true, employee });
+        return Ok(result);
     }
 
     [HttpPut("change-password")]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
-            string.IsNullOrWhiteSpace(request.NewPassword))
-            return BadRequest(new { message = "Alle Felder sind erforderlich" });
+        var (success, message, errorMessage) = await _authService.ChangePasswordAsync(User, request);
 
-        if (request.NewPassword.Length < 8)
-            return BadRequest(new { message = "Neues Passwort muss mindestens 8 Zeichen haben" });
+        if (!success)
+            return BadRequest(new { message = errorMessage });
 
-        var employeeId = JwtService.GetEmployeeId(User);
-        var employee = await _context.Employees.FindAsync(employeeId);
-        if (employee == null) return NotFound();
-
-        if (string.IsNullOrEmpty(employee.PasswordHash) ||
-            !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, employee.PasswordHash))
-            return BadRequest(new { message = "Aktuelles Passwort ist falsch" });
-
-        employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
-        employee.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        return Ok(new { success = true, message = "Passwort erfolgreich geändert" });
+        return Ok(new { success = true, message });
     }
 
     [HttpPost("set-password")]
     [AllowAnonymous]
     public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
     {
+        var (success, message, errorMessage) = await _authService.SetPasswordAsync(request);
 
-        if (string.IsNullOrWhiteSpace(request.Username) ||
-            string.IsNullOrWhiteSpace(request.Password))
-            return BadRequest(new { message = "Benutzername und Passwort erforderlich" });
+        if (!success)
+        {
+            if (errorMessage == "Mitarbeiter nicht gefunden")
+                return NotFound(new { message = errorMessage });
+            return BadRequest(new { message = errorMessage });
+        }
 
-        var employee = await _context.Employees
-            .FirstOrDefaultAsync(e => e.Username == request.Username.Trim().ToLower());
-
-        if (employee == null)
-            return NotFound(new { message = "Mitarbeiter nicht gefunden" });
-
-        employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12);
-        employee.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        return Ok(new { success = true, message = $"Passwort für {employee.Name} gesetzt" });
+        return Ok(new { success = true, message });
     }
 }

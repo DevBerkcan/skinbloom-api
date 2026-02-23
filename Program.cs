@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Skinbloom.Api.Options;
+using Skinbloom.Api.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -110,6 +111,9 @@ builder.Services.AddScoped<ManualBookingService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<TrackingService>();
+builder.Services.AddScoped<ServiceService>();
+builder.Services.AddScoped<EmployeeAuthService>();
 builder.Services.AddSingleton<IHostedService, HangfireJobScheduler>();
 
 builder.Services.AddHangfire(configuration => configuration

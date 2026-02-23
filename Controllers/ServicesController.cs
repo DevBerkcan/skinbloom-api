@@ -1,7 +1,7 @@
 using BarberDario.Api.Data;
 using BarberDario.Api.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Skinbloom.Api.Services;
 
 namespace BarberDario.Api.Controllers;
 
@@ -9,12 +9,12 @@ namespace BarberDario.Api.Controllers;
 [Route("api/[controller]")]
 public class ServicesController : ControllerBase
 {
-    private readonly SkinbloomDbContext _context;
+    private readonly ServiceService _serviceService;
     private readonly ILogger<ServicesController> _logger;
 
-    public ServicesController(SkinbloomDbContext context, ILogger<ServicesController> logger)
+    public ServicesController(ServiceService serviceService, ILogger<ServicesController> logger)
     {
-        _context = context;
+        _serviceService = serviceService;
         _logger = logger;
     }
 
@@ -25,21 +25,7 @@ public class ServicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ServiceDto>>> GetServices()
     {
-        var services = await _context.Services
-            .Where(s => s.IsActive)
-            .OrderBy(s => s.DisplayOrder)
-            .Select(s => new ServiceDto(
-                s.Id,
-                s.Name,
-                s.Description,
-                s.DurationMinutes,
-                s.Price,
-                s.DisplayOrder
-            ))
-            .ToListAsync();
-
-        _logger.LogInformation("Retrieved {Count} active services", services.Count);
-
+        var services = await _serviceService.GetServicesAsync();
         return Ok(services);
     }
 
@@ -50,32 +36,7 @@ public class ServicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ServiceCategoryDto>>> GetServiceCategories()
     {
-        var categories = await _context.ServiceCategories
-            .Where(c => c.IsActive)
-            .OrderBy(c => c.DisplayOrder)
-            .Select(c => new ServiceCategoryDto(
-                c.Id,
-                c.Name,
-                c.Description,
-                c.DisplayOrder,
-                c.IsActive,
-                c.Services
-                    .Where(s => s.IsActive)
-                    .OrderBy(s => s.DisplayOrder)
-                    .Select(s => new ServiceDto(
-                        s.Id,
-                        s.Name,
-                        s.Description,
-                        s.DurationMinutes,
-                        s.Price,
-                        s.DisplayOrder
-                    ))
-                    .ToList()
-            ))
-            .ToListAsync();
-
-        _logger.LogInformation("Retrieved {Count} service categories", categories.Count);
-
+        var categories = await _serviceService.GetServiceCategoriesAsync();
         return Ok(categories);
     }
 
@@ -87,29 +48,12 @@ public class ServicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<ServiceDto>>> GetServicesByCategory(Guid categoryId)
     {
-        var category = await _context.ServiceCategories
-            .FirstOrDefaultAsync(c => c.Id == categoryId && c.IsActive);
+        var (services, categoryExists) = await _serviceService.GetServicesByCategoryAsync(categoryId);
 
-        if (category == null)
+        if (!categoryExists)
         {
             return NotFound(new { message = "Category not found" });
         }
-
-        var services = await _context.Services
-            .Where(s => s.CategoryId == categoryId && s.IsActive)
-            .OrderBy(s => s.DisplayOrder)
-            .Select(s => new ServiceDto(
-                s.Id,
-                s.Name,
-                s.Description,
-                s.DurationMinutes,
-                s.Price,
-                s.DisplayOrder
-            ))
-            .ToListAsync();
-
-        _logger.LogInformation("Retrieved {Count} services for category {CategoryId}", 
-            services.Count, categoryId);
 
         return Ok(services);
     }
@@ -122,20 +66,7 @@ public class ServicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ServiceWithCategoryDto>> GetServiceDetails(Guid id)
     {
-        var service = await _context.Services
-            .Include(s => s.Category)
-            .Where(s => s.Id == id && s.IsActive)
-            .Select(s => new ServiceWithCategoryDto(
-                s.Id,
-                s.Name,
-                s.Description,
-                s.DurationMinutes,
-                s.Price,
-                s.DisplayOrder,
-                s.CategoryId,
-                s.Category.Name
-            ))
-            .FirstOrDefaultAsync();
+        var service = await _serviceService.GetServiceDetailsAsync(id);
 
         if (service == null)
         {
@@ -145,7 +76,6 @@ public class ServicesController : ControllerBase
         return Ok(service);
     }
 
-
     /// <summary>
     /// Get all categories (including inactive ones) - Admin only
     /// </summary>
@@ -154,28 +84,7 @@ public class ServicesController : ControllerBase
     public async Task<ActionResult<List<ServiceCategoryDto>>> GetAllCategories()
     {
         // TODO: Add admin authorization
-        var categories = await _context.ServiceCategories
-            .OrderBy(c => c.DisplayOrder)
-            .Select(c => new ServiceCategoryDto(
-                c.Id,
-                c.Name,
-                c.Description,
-                c.DisplayOrder,
-                c.IsActive,
-                c.Services
-                    .OrderBy(s => s.DisplayOrder)
-                    .Select(s => new ServiceDto(
-                        s.Id,
-                        s.Name,
-                        s.Description,
-                        s.DurationMinutes,
-                        s.Price,
-                        s.DisplayOrder
-                    ))
-                    .ToList()
-            ))
-            .ToListAsync();
-
+        var categories = await _serviceService.GetAllCategoriesAsync();
         return Ok(categories);
     }
 
@@ -186,26 +95,7 @@ public class ServicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<object>> GetServicesSummary()
     {
-        var totalServices = await _context.Services.CountAsync(s => s.IsActive);
-        var totalCategories = await _context.ServiceCategories.CountAsync(c => c.IsActive);
-        
-        var categoryBreakdown = await _context.ServiceCategories
-            .Where(c => c.IsActive)
-            .Select(c => new
-            {
-                CategoryName = c.Name,
-                ServiceCount = c.Services.Count(s => s.IsActive),
-                AveragePrice = c.Services.Where(s => s.IsActive).Average(s => (double?)s.Price) ?? 0,
-                TotalRevenue = c.Services.Where(s => s.IsActive).Sum(s => s.Price)
-            })
-            .ToListAsync();
-
-        return Ok(new
-        {
-            TotalServices = totalServices,
-            TotalCategories = totalCategories,
-            CategoryBreakdown = categoryBreakdown,
-            LastUpdated = DateTime.UtcNow
-        });
+        var summary = await _serviceService.GetServicesSummaryAsync();
+        return Ok(summary);
     }
 }

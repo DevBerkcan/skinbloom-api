@@ -995,13 +995,6 @@ Tel: +41 61 123 45 67";
 
     #endregion
 
-    private string GenerateConfirmationToken(Guid bookingId)
-    {
-        return Convert.ToBase64String(
-            System.Text.Encoding.UTF8.GetBytes($"{bookingId}:{DateTime.UtcNow.Ticks}:confirm")
-        ).Replace("+", "-").Replace("/", "_").Replace("=", "");
-    }
-
     private string GenerateCancellationToken(Guid bookingId)
     {
         return Convert.ToBase64String(
