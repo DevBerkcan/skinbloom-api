@@ -44,6 +44,23 @@ public record UpdateEmployeeRequest(
     string? Location
 );
 
+public record EmployeeWithServicesDto(
+    Guid Id,
+    string Name,
+    string Role,
+    string? Specialty,
+    bool IsActive,
+    string? Location,
+    List<ServiceBasicDto> AssignedServices
+);
+
+public record ServiceBasicDto(
+    Guid Id,
+    string Name,
+    int DurationMinutes,
+    decimal Price
+);
+
 public record LoginRequest(string Username, string Password);
 
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

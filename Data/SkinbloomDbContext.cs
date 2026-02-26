@@ -89,6 +89,12 @@ public class SkinbloomDbContext : DbContext
             entity.HasIndex(e => e.IsActive);
         });
 
+        modelBuilder.Entity<Service>()
+            .HasOne(s => s.Employee)
+            .WithMany(e => e.Services)
+            .HasForeignKey(s => s.EmployeeId)
+            .OnDelete(DeleteBehavior.SetNull);
+
 
         modelBuilder.Entity<Customer>(entity =>
         {

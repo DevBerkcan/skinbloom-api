@@ -24,11 +24,41 @@ public class EmployeesController : ControllerBase
     private Guid? GetCurrentEmployeeId() => JwtService.GetEmployeeId(User);
 
     // ── GET /api/employees ────────────────────────────────────────
+    // Updated to support service filtering
     [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] bool activeOnly = true,
+        [FromQuery] Guid? serviceId = null) // Added serviceId parameter
     {
-        var employees = await _employeeService.GetAllAsync(activeOnly);
+        var employees = await _employeeService.GetAllAsync(activeOnly, serviceId);
+        return Ok(employees);
+    }
+
+    // ── NEW: GET /api/employees/by-service/{serviceId} ─────────────
+    // Get employees that can perform a specific service
+    [HttpGet("by-service/{serviceId:guid}")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetEmployeesByService(
+        Guid serviceId,
+        [FromQuery] bool activeOnly = true)
+    {
+        var employees = await _employeeService.GetEmployeesByServiceAsync(serviceId, activeOnly);
+        return Ok(employees);
+    }
+
+    // ── NEW: GET /api/employees/with-services ──────────────────────
+    // Get employees with their assigned services (for admin panel)
+    [HttpGet("with-services")]
+    [Authorize] // Requires authentication
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetEmployeesWithServices(
+        [FromQuery] bool activeOnly = true)
+    {
+        var employees = await _employeeService.GetEmployeesWithServicesAsync(activeOnly);
         return Ok(employees);
     }
 

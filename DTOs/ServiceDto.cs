@@ -18,7 +18,6 @@ public record ServiceCategoryDto(
     List<ServiceDto> Services
 );
 
-// Optional: Detailed ServiceDto with Category info
 public record ServiceWithCategoryDto(
     Guid Id,
     string Name,
@@ -27,5 +26,19 @@ public record ServiceWithCategoryDto(
     decimal Price,
     int DisplayOrder,
     Guid CategoryId,
-    string CategoryName
+    string CategoryName,
+    EmployeeBasicDto? AssignedEmployee = null
+);
+
+public record EmployeeBasicDto(
+    Guid Id,
+    string Name,
+    string Role,
+    string? Specialty
+);
+
+// For assigning service to employee
+public record AssignServiceToEmployeeDto(
+    Guid ServiceId,
+    Guid EmployeeId
 );

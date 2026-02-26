@@ -17,4 +17,5 @@ public class Employee
 
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public ICollection<BlockedTimeSlot> BlockedTimeSlots { get; set; } = new List<BlockedTimeSlot>();
+    public ICollection<Service> Services { get; set; } = new List<Service>();
 }
