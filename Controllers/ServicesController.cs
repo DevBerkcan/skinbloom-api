@@ -185,16 +185,16 @@ public class ServicesController : ControllerBase
     /// <summary>
     /// Remove a service from an employee (Admin only)
     /// </summary>
-    [HttpDelete("assign/{serviceId}")]
+    [HttpDelete("assign/{serviceId}/employee/{employeeId}")] // Fixed route
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RemoveServiceFromEmployee(Guid serviceId)
+    public async Task<IActionResult> RemoveServiceFromEmployee(Guid serviceId, Guid employeeId)
     {
         try
         {
-            var result = await _serviceService.RemoveServiceFromEmployeeAsync(serviceId);
+            var result = await _serviceService.RemoveServiceFromEmployeeAsync(serviceId, employeeId);
             return Ok(new { message = "Service removed from employee successfully" });
         }
         catch (ArgumentException ex)

@@ -23,6 +23,8 @@ public class SkinbloomDbContext : DbContext
     public DbSet<LinkClick> LinkClicks { get; set; }
     public DbSet<Employee> Employees { get; set; }
 
+    public DbSet<ServiceEmployee> ServiceEmployees { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -89,11 +91,27 @@ public class SkinbloomDbContext : DbContext
             entity.HasIndex(e => e.IsActive);
         });
 
-        modelBuilder.Entity<Service>()
-            .HasOne(s => s.Employee)
-            .WithMany(e => e.Services)
-            .HasForeignKey(s => s.EmployeeId)
-            .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<ServiceEmployee>()
+            .HasKey(se => new { se.ServiceId, se.EmployeeId });
+
+        modelBuilder.Entity<ServiceEmployee>()
+            .HasOne(se => se.Service)
+            .WithMany(s => s.ServiceEmployees)
+            .HasForeignKey(se => se.ServiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ServiceEmployee>()
+            .HasOne(se => se.Employee)
+            .WithMany(e => e.ServiceEmployees)
+            .HasForeignKey(se => se.EmployeeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Add indexes
+        modelBuilder.Entity<ServiceEmployee>()
+            .HasIndex(se => se.ServiceId);
+
+        modelBuilder.Entity<ServiceEmployee>()
+            .HasIndex(se => se.EmployeeId);
 
 
         modelBuilder.Entity<Customer>(entity =>

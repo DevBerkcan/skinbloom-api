@@ -16,20 +16,21 @@ public class EmployeeService
         _logger = logger;
     }
 
-    // Updated GetAllAsync to optionally filter by service
+    // Updated GetAllAsync to optionally filter by service using the junction table
     public async Task<IEnumerable<object>> GetAllAsync(bool activeOnly = true, Guid? serviceId = null)
     {
         var query = _context.Employees
-            .Include(e => e.Services) // Include services for filtering
+            .Include(e => e.ServiceEmployees)
+                .ThenInclude(se => se.Service)
             .AsQueryable();
 
         if (activeOnly)
             query = query.Where(e => e.IsActive);
 
-        // Filter by service if serviceId is provided
+        // Filter by service if serviceId is provided using the junction table
         if (serviceId.HasValue)
         {
-            query = query.Where(e => e.Services.Any(s => s.Id == serviceId.Value));
+            query = query.Where(e => e.ServiceEmployees.Any(se => se.ServiceId == serviceId.Value));
         }
 
         return await query
@@ -47,12 +48,12 @@ public class EmployeeService
                 e.Username,
                 HasPassword = !string.IsNullOrEmpty(e.PasswordHash),
                 // Include assigned service IDs for frontend use
-                AssignedServiceIds = e.Services.Select(s => s.Id).ToList()
+                AssignedServiceIds = e.ServiceEmployees.Select(se => se.ServiceId).ToList()
             })
             .ToListAsync();
     }
 
-    // NEW: Get employees by service ID
+    // Updated: Get employees by service ID using the junction table
     public async Task<IEnumerable<object>> GetEmployeesByServiceAsync(Guid serviceId, bool activeOnly = true)
     {
         // First check if service exists
@@ -62,9 +63,10 @@ public class EmployeeService
         if (service == null)
             return new List<object>();
 
-        // Find employees that have this service assigned (where Service.EmployeeId matches)
+        // Find employees that have this service assigned via the junction table
         var query = _context.Employees
-            .Where(e => e.Services.Any(s => s.Id == serviceId));
+            .Include(e => e.ServiceEmployees)
+            .Where(e => e.ServiceEmployees.Any(se => se.ServiceId == serviceId));
 
         if (activeOnly)
             query = query.Where(e => e.IsActive);
@@ -85,11 +87,12 @@ public class EmployeeService
             .ToListAsync();
     }
 
-    // Updated GetByIdAsync to include assigned services
+    // Updated GetByIdAsync to include assigned services via junction table
     public async Task<object?> GetByIdAsync(Guid id)
     {
         var e = await _context.Employees
-            .Include(emp => emp.Services) // Include services
+            .Include(emp => emp.ServiceEmployees)
+                .ThenInclude(se => se.Service)
             .FirstOrDefaultAsync(emp => emp.Id == id);
 
         if (e == null) return null;
@@ -107,21 +110,24 @@ public class EmployeeService
             e.Username,
             HasPassword = !string.IsNullOrEmpty(e.PasswordHash),
             // Include assigned services
-            AssignedServices = e.Services.Where(s => s.IsActive).Select(s => new
-            {
-                s.Id,
-                s.Name,
-                s.DurationMinutes,
-                s.Price
-            }).ToList()
+            AssignedServices = e.ServiceEmployees
+                .Where(se => se.Service.IsActive)
+                .Select(se => new
+                {
+                    se.Service.Id,
+                    se.Service.Name,
+                    se.Service.DurationMinutes,
+                    se.Service.Price
+                }).ToList()
         };
     }
 
-    // NEW: Get employees with their assigned services (for admin panel)
+    // Updated: Get employees with their assigned services (for admin panel)
     public async Task<IEnumerable<EmployeeWithServicesDto>> GetEmployeesWithServicesAsync(bool activeOnly = true)
     {
         var query = _context.Employees
-            .Include(e => e.Services)
+            .Include(e => e.ServiceEmployees)
+                .ThenInclude(se => se.Service)
             .AsQueryable();
 
         if (activeOnly)
@@ -136,12 +142,14 @@ public class EmployeeService
                 e.Specialty,
                 e.IsActive,
                 e.Location,
-                e.Services.Where(s => s.IsActive).Select(s => new ServiceBasicDto(
-                    s.Id,
-                    s.Name,
-                    s.DurationMinutes,
-                    s.Price
-                )).ToList()
+                e.ServiceEmployees
+                    .Where(se => se.Service.IsActive)
+                    .Select(se => new ServiceBasicDto(
+                        se.Service.Id,
+                        se.Service.Name,
+                        se.Service.DurationMinutes,
+                        se.Service.Price
+                    )).ToList()
             ))
             .ToListAsync();
     }

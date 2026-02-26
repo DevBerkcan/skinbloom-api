@@ -1,7 +1,6 @@
-// DTOs/ServiceDto.cs
 namespace BarberDario.Api.DTOs;
 
-// Original DTOs - DO NOT DELETE
+// Original DTOs - Keep these for public API
 public record ServiceDto(
     Guid Id,
     string Name,
@@ -29,7 +28,7 @@ public record ServiceWithCategoryDto(
     int DisplayOrder,
     Guid CategoryId,
     string CategoryName,
-    EmployeeBasicDto? AssignedEmployee = null
+    List<EmployeeBasicDto>? AssignedEmployees = null  // Changed from single to list
 );
 
 public record EmployeeBasicDto(
@@ -45,7 +44,7 @@ public record AssignServiceToEmployeeDto(
     Guid EmployeeId
 );
 
-// NEW ADMIN DTOs - Add these below existing ones
+// NEW ADMIN DTOs
 public record AdminServiceDto(
     Guid Id,
     string Name,
@@ -55,8 +54,7 @@ public record AdminServiceDto(
     int DisplayOrder,
     Guid CategoryId,
     string CategoryName,
-    Guid? EmployeeId,
-    string? EmployeeName,
+    List<EmployeeBasicDto> AssignedEmployees,  // Changed from single to list
     bool IsActive
 );
 
@@ -76,7 +74,7 @@ public record CreateServiceDto(
     decimal Price,
     int DisplayOrder,
     Guid CategoryId,
-    Guid? EmployeeId
+    List<Guid>? EmployeeIds = null  // Changed from single to list
 );
 
 public record UpdateServiceDto(
@@ -86,7 +84,7 @@ public record UpdateServiceDto(
     decimal Price,
     int DisplayOrder,
     Guid CategoryId,
-    Guid? EmployeeId,
+    List<Guid>? EmployeeIds,  // Changed from single to list
     bool IsActive
 );
 
@@ -109,4 +107,9 @@ public record EmployeeForAssignmentDto(
     string Role,
     string? Specialty,
     int ServiceCount
+);
+
+public record BulkAssignDto(
+    Guid EmployeeId,
+    List<Guid> ServiceIds
 );
