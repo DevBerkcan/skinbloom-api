@@ -121,6 +121,12 @@ public class AdminService
         var startOfLastMonth = startOfMonth.AddMonths(-1);
         var endOfLastMonth = startOfMonth.AddDays(-1);
 
+        // Get currency from first active service (or default to CHF)
+        var currency = await _context.Services
+            .Where(s => s.IsActive)
+            .Select(s => s.Currency)
+            .FirstOrDefaultAsync() ?? "CHF";
+
         // Base query with employee filter
         var bookingsQuery = _context.Bookings
             .Include(b => b.Service)
@@ -153,7 +159,8 @@ public class AdminService
             {
                 ServiceId = b.Service.Id,
                 ServiceName = b.Service.Name,
-                Price = b.Service.Price
+                Price = b.Service.Price,
+                Currency = b.Service.Currency
             })
             .ToListAsync();
 
@@ -162,7 +169,8 @@ public class AdminService
             .Select(g => new PopularServiceDto(
                 g.Key.ServiceName ?? "Unknown",
                 g.Count(),
-                g.Sum(b => b.Price)
+                g.Sum(b => b.Price),
+                g.First().Currency
             ))
             .OrderByDescending(s => s.BookingCount)
             .Take(5)
@@ -185,9 +193,11 @@ public class AdminService
             totalCustomers,
             newCustomersThisMonth,
             avgBookingValue,
+            currency, // Add this
             popularServices
         );
     }
+    
 
     public async Task<PagedResponseDto<BookingListItemDto>> GetBookingsAsync(BookingFilterDto filter)
     {

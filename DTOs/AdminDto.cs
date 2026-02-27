@@ -36,13 +36,15 @@ public record DashboardStatisticsDto(
     int TotalCustomers,
     int NewCustomersThisMonth,
     decimal AverageBookingValue,
+    string Currency,
     List<PopularServiceDto> PopularServices
 );
 
 public record PopularServiceDto(
     string ServiceName,
     int BookingCount,
-    decimal Revenue
+    decimal Revenue,
+    string Currency
 );
 
 public record BookingListItemDto(
