@@ -57,6 +57,7 @@ public record BookingListItemDto(
     string StartTime,
     string EndTime,
     decimal Price,
+    string Currency,
     string? CustomerNotes,
     DateTime CreatedAt
 );

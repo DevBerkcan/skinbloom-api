@@ -135,7 +135,8 @@ public class ManualBookingService
                 bookingDate.ToString("yyyy-MM-dd"),
                 startTime.ToString("HH:mm"),
                 endTime.ToString("HH:mm"),
-                service.Price
+                service.Price,
+                service.Currency
             ),
             new CustomerBasicDto(
                 customer.FirstName,
@@ -170,7 +171,8 @@ public class ManualBookingService
                 booking.BookingDate.ToString("yyyy-MM-dd"),
                 booking.StartTime.ToString("HH:mm"),
                 booking.EndTime.ToString("HH:mm"),
-                booking.Service.Price
+                booking.Service.Price,
+                booking.Service.Currency
             ),
             new CustomerBasicDto(
                 booking.Customer.FirstName,

@@ -7,7 +7,8 @@ public record ServiceDto(
     string? Description,
     int DurationMinutes,
     decimal Price,
-    int DisplayOrder
+    int DisplayOrder,
+    string Currency
 );
 
 public record ServiceCategoryDto(
@@ -28,7 +29,8 @@ public record ServiceWithCategoryDto(
     int DisplayOrder,
     Guid CategoryId,
     string CategoryName,
-    List<EmployeeBasicDto>? AssignedEmployees = null  // Changed from single to list
+    string Currency,
+    List<EmployeeBasicDto>? AssignedEmployees = null  
 );
 
 public record EmployeeBasicDto(
@@ -54,7 +56,8 @@ public record AdminServiceDto(
     int DisplayOrder,
     Guid CategoryId,
     string CategoryName,
-    List<EmployeeBasicDto> AssignedEmployees,  // Changed from single to list
+    string Currency,
+    List<EmployeeBasicDto> AssignedEmployees, 
     bool IsActive
 );
 
@@ -74,7 +77,8 @@ public record CreateServiceDto(
     decimal Price,
     int DisplayOrder,
     Guid CategoryId,
-    List<Guid>? EmployeeIds = null  // Changed from single to list
+    string Currency,
+    List<Guid>? EmployeeIds = null
 );
 
 public record UpdateServiceDto(
@@ -84,7 +88,8 @@ public record UpdateServiceDto(
     decimal Price,
     int DisplayOrder,
     Guid CategoryId,
-    List<Guid>? EmployeeIds,  // Changed from single to list
+    string Currency,
+    List<Guid>? EmployeeIds,
     bool IsActive
 );
 

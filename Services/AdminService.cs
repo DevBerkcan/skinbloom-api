@@ -42,7 +42,8 @@ public class AdminService
                 CustomerEmail = b.Customer != null ? b.Customer.Email : null,
                 CustomerPhone = b.Customer != null ? b.Customer.Phone : null,
                 ServiceName = b.Service != null ? b.Service.Name : "Unknown Service",
-                ServicePrice = b.Service != null ? b.Service.Price : 0
+                ServicePrice = b.Service != null ? b.Service.Price : 0,
+                ServiceCurrency = b.Service != null ? b.Service.Currency : "CHF"
             })
             .ToListAsync();
 
@@ -65,6 +66,7 @@ public class AdminService
                 b.Booking.StartTime.ToString("HH:mm"),
                 b.Booking.EndTime.ToString("HH:mm"),
                 b.ServicePrice,
+                b.ServiceCurrency,
                 b.Booking.CustomerNotes,
                 b.Booking.CreatedAt
             )).ToList()
@@ -270,6 +272,7 @@ public class AdminService
                 b.StartTime.ToString("HH:mm"),
                 b.EndTime.ToString("HH:mm"),
                 b.Service?.Price ?? 0,
+                b.Service?.Currency ?? "CHF",
                 b.CustomerNotes,
                 b.CreatedAt
             );
@@ -333,6 +336,7 @@ public class AdminService
             booking.StartTime.ToString("HH:mm"),
             booking.EndTime.ToString("HH:mm"),
             booking.Service?.Price ?? 0,
+            booking.Service?.Currency ?? "CHF",
             booking.CustomerNotes,
             booking.CreatedAt
         );

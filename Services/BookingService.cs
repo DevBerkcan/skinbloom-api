@@ -463,7 +463,8 @@ public class BookingService
                 b.BookingDate.ToString("yyyy-MM-dd"),
                 b.StartTime.ToString("HH:mm"),
                 b.EndTime.ToString("HH:mm"),
-                service.Price
+                service.Price,
+                service.Currency
             ),
             new CustomerToBookingDto(customer.FirstName, customer.LastName, customer.Email),
             employee == null

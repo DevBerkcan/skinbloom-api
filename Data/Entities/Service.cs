@@ -14,6 +14,7 @@ public class Service
     public int DisplayOrder { get; set; } = 0;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string Currency { get; set; }
 
     // Navigation properties
     public ServiceCategory Category { get; set; } = null!;

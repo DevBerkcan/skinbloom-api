@@ -33,7 +33,8 @@ public record BookingDetailsDto(
     string BookingDate,
     string StartTime,
     string EndTime,
-    decimal Price
+    decimal Price,
+    string Currency
 );
 
 public record CustomerToBookingDto(

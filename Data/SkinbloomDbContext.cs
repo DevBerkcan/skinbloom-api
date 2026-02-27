@@ -76,6 +76,10 @@ public class SkinbloomDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Price).HasPrecision(10, 2);
+            entity.Property(e => e.Currency) // Add this
+                  .IsRequired()
+                  .HasMaxLength(3)
+                  .HasDefaultValue("CHF");
             entity.HasIndex(e => e.IsActive);
         });
 
@@ -228,7 +232,8 @@ public class SkinbloomDbContext : DbContext
                 DurationMinutes = 30,
                 Price = 35.00m,
                 DisplayOrder = 1,
-                IsActive = true
+                IsActive = true,
+                Currency = "EUR"
             },
             new Service
             {
@@ -238,7 +243,8 @@ public class SkinbloomDbContext : DbContext
                 DurationMinutes = 20,
                 Price = 20.00m,
                 DisplayOrder = 2,
-                IsActive = true
+                IsActive = true,
+                Currency = "EUR"
             },
             new Service
             {
@@ -248,7 +254,8 @@ public class SkinbloomDbContext : DbContext
                 DurationMinutes = 50,
                 Price = 50.00m,
                 DisplayOrder = 3,
-                IsActive = true
+                IsActive = true,
+                Currency = "EUR"
             },
             new Service
             {
@@ -258,7 +265,8 @@ public class SkinbloomDbContext : DbContext
                 DurationMinutes = 30,
                 Price = 25.00m,
                 DisplayOrder = 4,
-                IsActive = true
+                IsActive = true,
+                Currency = "EUR"
             }
         };
         modelBuilder.Entity<Service>().HasData(services);

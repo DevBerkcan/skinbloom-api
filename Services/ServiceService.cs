@@ -40,7 +40,8 @@ public class ServiceService
                 s.Description,
                 s.DurationMinutes,
                 s.Price,
-                s.DisplayOrder
+                s.DisplayOrder,
+                s.Currency
             ))
             .ToListAsync();
 
@@ -72,7 +73,8 @@ public class ServiceService
                         s.Description,
                         s.DurationMinutes,
                         s.Price,
-                        s.DisplayOrder
+                        s.DisplayOrder,
+                        s.Currency
                     ))
                     .ToList()
             ))
@@ -115,7 +117,8 @@ public class ServiceService
                 s.Description,
                 s.DurationMinutes,
                 s.Price,
-                s.DisplayOrder
+                s.DisplayOrder,
+                s.Currency
             ))
             .ToListAsync();
 
@@ -148,6 +151,7 @@ public class ServiceService
                 s.DisplayOrder,
                 s.CategoryId,
                 s.Category.Name,
+                s.Currency,
                 s.ServiceEmployees.Select(se => new EmployeeBasicDto(
                     se.Employee.Id,
                     se.Employee.Name,
@@ -172,7 +176,8 @@ public class ServiceService
                 s.Description,
                 s.DurationMinutes,
                 s.Price,
-                s.DisplayOrder
+                s.DisplayOrder,
+                s.Currency
             ))
             .ToListAsync();
 
@@ -201,7 +206,8 @@ public class ServiceService
                         s.Description,
                         s.DurationMinutes,
                         s.Price,
-                        s.DisplayOrder
+                        s.DisplayOrder,
+                        s.Currency
                     ))
                     .ToList()
             ))
@@ -336,6 +342,7 @@ public class ServiceService
                 s.DisplayOrder,
                 s.CategoryId,
                 s.Category.Name,
+                s.Currency,
                 s.ServiceEmployees.Select(se => new EmployeeBasicDto(
                     se.Employee.Id,
                     se.Employee.Name,
@@ -370,6 +377,7 @@ public class ServiceService
             service.DisplayOrder,
             service.CategoryId,
             service.Category.Name,
+            service.Currency,
             service.ServiceEmployees.Select(se => new EmployeeBasicDto(
                 se.Employee.Id,
                 se.Employee.Name,
@@ -570,6 +578,7 @@ public class ServiceService
                     s.DisplayOrder,
                     s.CategoryId,
                     c.Name,
+                    s.Currency,
                     s.ServiceEmployees.Select(se => new EmployeeBasicDto(
                         se.Employee.Id,
                         se.Employee.Name,
@@ -609,6 +618,7 @@ public class ServiceService
                 s.Price,
                 s.DisplayOrder,
                 s.CategoryId,
+                s.Currency,
                 category.Name,
                 s.ServiceEmployees.Select(se => new EmployeeBasicDto(
                     se.Employee.Id,
@@ -735,6 +745,7 @@ public class ServiceService
                 s.DisplayOrder,
                 s.CategoryId,
                 s.Category.Name,
+                s.Currency,
                 s.ServiceEmployees.Select(se => new EmployeeBasicDto(
                     se.Employee.Id,
                     se.Employee.Name,
