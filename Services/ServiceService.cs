@@ -402,6 +402,7 @@ public class ServiceService
             Description = dto.Description,
             DurationMinutes = dto.DurationMinutes,
             Price = dto.Price,
+            Currency = dto.Currency,
             DisplayOrder = dto.DisplayOrder,
             CategoryId = dto.CategoryId,
             IsActive = true,
@@ -468,6 +469,7 @@ public class ServiceService
         service.Description = dto.Description;
         service.DurationMinutes = dto.DurationMinutes;
         service.Price = dto.Price;
+        service.Currency = dto.Currency;
         service.DisplayOrder = dto.DisplayOrder;
         service.CategoryId = dto.CategoryId;
         service.IsActive = dto.IsActive;
