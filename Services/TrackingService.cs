@@ -1,5 +1,5 @@
 ﻿using BarberDario.Api.Data;
-using BarberDario.Api.Data.Entities;  // WICHTIG: Änderung hier - von Skinbloom.Api zu BarberDario.Api
+using BarberDario.Api.Data.Entities;
 using BarberDario.Api.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Skinbloom.Api.Data.Entities;
@@ -46,18 +46,32 @@ public class TrackingService
             .Where(p => p.ViewedAt >= queryFromDate && p.ViewedAt <= queryToDate)
             .CountAsync();
 
-        // Total bookings and revenue
+        // Total bookings and revenue split by currency
         var bookings = await _context.Bookings
             .Include(b => b.Service)
             .Where(b => b.CreatedAt >= queryFromDate && b.CreatedAt <= queryToDate
-                        && b.Status != BookingStatus.Cancelled)  // WICHTIG: Änderung hier - ohne Data.Entities Präfix
+                        && b.Status != BookingStatus.Cancelled)
+            .Select(b => new
+            {
+                b.Service.Price,
+                b.Service.Currency
+            })
             .ToListAsync();
 
         var totalBookings = bookings.Count;
-        var totalRevenue = bookings.Sum(b => b.Service?.Price ?? 0);
 
-        // Average booking value
-        var averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+        // Split revenue by currency
+        var totalRevenueCHF = bookings
+            .Where(b => b.Currency == "CHF")
+            .Sum(b => b.Price);
+
+        var totalRevenueEUR = bookings
+            .Where(b => b.Currency == "EUR")
+            .Sum(b => b.Price);
+
+        // Average booking values by currency
+        var averageBookingValueCHF = totalBookings > 0 ? totalRevenueCHF / totalBookings : 0;
+        var averageBookingValueEUR = totalBookings > 0 ? totalRevenueEUR / totalBookings : 0;
 
         // Total link clicks
         var totalLinkClicks = await _context.LinkClicks
@@ -92,8 +106,10 @@ public class TrackingService
             TotalBookings = totalBookings,
             TotalPageViews = totalPageViews,
             TotalLinkClicks = totalLinkClicks,
-            TotalRevenue = totalRevenue,
-            AverageBookingValue = Math.Round(averageBookingValue, 2),
+            TotalRevenueCHF = Math.Round(totalRevenueCHF, 2),
+            TotalRevenueEUR = Math.Round(totalRevenueEUR, 2),
+            AverageBookingValueCHF = Math.Round(averageBookingValueCHF, 2),
+            AverageBookingValueEUR = Math.Round(averageBookingValueEUR, 2),
             LinkClicks = linkClickStats
         };
     }
@@ -104,42 +120,98 @@ public class TrackingService
         var weekAgo = today.AddDays(-7);
         var monthAgo = today.AddDays(-30);
 
-        // Today's bookings
+        // Today's bookings with currency
         var todayBookings = await _context.Bookings
             .Include(b => b.Service)
             .Where(b => b.CreatedAt.Date == today
-                        && b.Status != BookingStatus.Cancelled)  // WICHTIG: Änderung hier
+                        && b.Status != BookingStatus.Cancelled)
+            .Select(b => new
+            {
+                b.Service.Price,
+                b.Service.Currency
+            })
             .ToListAsync();
 
-        // This week's bookings
+        // This week's bookings with currency
         var weekBookings = await _context.Bookings
             .Include(b => b.Service)
             .Where(b => b.CreatedAt >= weekAgo
-                        && b.Status != BookingStatus.Cancelled)  // WICHTIG: Änderung hier
+                        && b.Status != BookingStatus.Cancelled)
+            .Select(b => new
+            {
+                b.Service.Price,
+                b.Service.Currency
+            })
             .ToListAsync();
 
-        // This month's bookings
+        // This month's bookings with currency
         var monthBookings = await _context.Bookings
             .Include(b => b.Service)
             .Where(b => b.CreatedAt >= monthAgo
-                        && b.Status != BookingStatus.Cancelled)  // WICHTIG: Änderung hier
+                        && b.Status != BookingStatus.Cancelled)
+            .Select(b => new
+            {
+                b.Service.Price,
+                b.Service.Currency
+            })
             .ToListAsync();
 
-        // ALL TIME bookings
+        // ALL TIME bookings with currency
         var allTimeBookings = await _context.Bookings
             .Include(b => b.Service)
-            .Where(b => b.Status != BookingStatus.Cancelled)  // WICHTIG: Änderung hier
+            .Where(b => b.Status != BookingStatus.Cancelled)
+            .Select(b => new
+            {
+                b.Service.Price,
+                b.Service.Currency
+            })
             .ToListAsync();
+
+        // Calculate revenue by currency for each period
+        var todayRevenueCHF = todayBookings
+            .Where(b => b.Currency == "CHF")
+            .Sum(b => b.Price);
+        var todayRevenueEUR = todayBookings
+            .Where(b => b.Currency == "EUR")
+            .Sum(b => b.Price);
+
+        var weekRevenueCHF = weekBookings
+            .Where(b => b.Currency == "CHF")
+            .Sum(b => b.Price);
+        var weekRevenueEUR = weekBookings
+            .Where(b => b.Currency == "EUR")
+            .Sum(b => b.Price);
+
+        var monthRevenueCHF = monthBookings
+            .Where(b => b.Currency == "CHF")
+            .Sum(b => b.Price);
+        var monthRevenueEUR = monthBookings
+            .Where(b => b.Currency == "EUR")
+            .Sum(b => b.Price);
+
+        var allTimeRevenueCHF = allTimeBookings
+            .Where(b => b.Currency == "CHF")
+            .Sum(b => b.Price);
+        var allTimeRevenueEUR = allTimeBookings
+            .Where(b => b.Currency == "EUR")
+            .Sum(b => b.Price);
 
         return new RevenueStatisticsDto
         {
-            TodayRevenue = Math.Round(todayBookings.Sum(b => b.Service?.Price ?? 0), 2),
+            TodayRevenueCHF = Math.Round(todayRevenueCHF, 2),
+            TodayRevenueEUR = Math.Round(todayRevenueEUR, 2),
             TodayBookings = todayBookings.Count,
-            WeekRevenue = Math.Round(weekBookings.Sum(b => b.Service?.Price ?? 0), 2),
+
+            WeekRevenueCHF = Math.Round(weekRevenueCHF, 2),
+            WeekRevenueEUR = Math.Round(weekRevenueEUR, 2),
             WeekBookings = weekBookings.Count,
-            MonthRevenue = Math.Round(monthBookings.Sum(b => b.Service?.Price ?? 0), 2),
+
+            MonthRevenueCHF = Math.Round(monthRevenueCHF, 2),
+            MonthRevenueEUR = Math.Round(monthRevenueEUR, 2),
             MonthBookings = monthBookings.Count,
-            AllTimeRevenue = Math.Round(allTimeBookings.Sum(b => b.Service?.Price ?? 0), 2),
+
+            AllTimeRevenueCHF = Math.Round(allTimeRevenueCHF, 2),
+            AllTimeRevenueEUR = Math.Round(allTimeRevenueEUR, 2),
             AllTimeBookings = allTimeBookings.Count
         };
     }

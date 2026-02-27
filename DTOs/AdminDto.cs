@@ -31,9 +31,9 @@ public record UpcomingBookingDto(
 public record DashboardStatisticsDto(
     int TotalBookingsThisMonth,
     int TotalBookingsLastMonth,
-    decimal RevenueThisMonthCHF,  
+    decimal RevenueThisMonthCHF,
     decimal RevenueLastMonthCHF,
-    decimal RevenueThisMonthEUR, 
+    decimal RevenueThisMonthEUR,
     decimal RevenueLastMonthEUR,
     int TotalCustomers,
     int NewCustomersThisMonth,
@@ -66,7 +66,7 @@ public record BookingListItemDto(
 
 // Update Booking Status Request
 public record UpdateBookingStatusDto(
-    string Status, // "Confirmed", "Completed", "NoShow", "Cancelled"
+    string Status,
     string? AdminNotes
 );
 
@@ -79,7 +79,7 @@ public record BookingFilterDto(
     string? SearchTerm,
     int Page = 1,
     int PageSize = 20,
-    Guid? EmployeeId = null 
+    Guid? EmployeeId = null
 );
 
 // Paginated Response

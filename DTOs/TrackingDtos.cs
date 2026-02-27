@@ -1,5 +1,4 @@
-﻿// BarberDario.Api/DTOs/TrackingDto.cs
-namespace BarberDario.Api.DTOs;
+﻿namespace BarberDario.Api.DTOs;
 
 public class TrackLinkClickDto
 {
@@ -14,8 +13,14 @@ public class SimplifiedTrackingStatisticsDto
     public int TotalBookings { get; set; }
     public int TotalPageViews { get; set; }
     public int TotalLinkClicks { get; set; }
-    public decimal TotalRevenue { get; set; }
-    public decimal AverageBookingValue { get; set; }
+
+    // Revenue split by currency
+    public decimal TotalRevenueCHF { get; set; }
+    public decimal TotalRevenueEUR { get; set; }
+
+    // Average booking value split by currency
+    public decimal AverageBookingValueCHF { get; set; }
+    public decimal AverageBookingValueEUR { get; set; }
 
     // Link click statistics
     public List<LinkClickStatisticDto> LinkClicks { get; set; } = new();
@@ -30,11 +35,17 @@ public class LinkClickStatisticDto
 
 public class RevenueStatisticsDto
 {
-    public decimal TodayRevenue { get; set; }
-    public decimal WeekRevenue { get; set; }
-    public decimal MonthRevenue { get; set; }
-    public decimal AllTimeRevenue { get; set; }
+    // Revenue split by currency
+    public decimal TodayRevenueCHF { get; set; }
+    public decimal TodayRevenueEUR { get; set; }
+    public decimal WeekRevenueCHF { get; set; }
+    public decimal WeekRevenueEUR { get; set; }
+    public decimal MonthRevenueCHF { get; set; }
+    public decimal MonthRevenueEUR { get; set; }
+    public decimal AllTimeRevenueCHF { get; set; }
+    public decimal AllTimeRevenueEUR { get; set; }
 
+    // Booking counts (same for both currencies)
     public int TodayBookings { get; set; }
     public int WeekBookings { get; set; }
     public int MonthBookings { get; set; }
