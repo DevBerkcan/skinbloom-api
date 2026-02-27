@@ -791,7 +791,7 @@ public class EmailService
                 <div class='cancel-text'>
                     Wir freuen uns, Sie bald wieder bei uns begrüßen zu dürfen.
                 </div>
-                <a href='{_emailOptions.BaseUrl}/booking' style='display: inline-block; background: linear-gradient(135deg, #3c3d3c, #A87B77 100%); color: #000000; text-decoration: none; padding: 14px 32px; border-radius: 40px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);'>Neuen Termin buchen
+                <a href='https://skinbloombooking.gentlegroup.de/booking' style='display: inline-block; background: linear-gradient(135deg, #3c3d3c, #A87B77 100%); color: #000000; text-decoration: none; padding: 14px 32px; border-radius: 40px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);'>Neuen Termin buchen
                 </a>
             </div>";
 
