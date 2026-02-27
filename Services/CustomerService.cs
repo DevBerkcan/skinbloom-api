@@ -111,7 +111,8 @@ public class CustomerService
                 b.StartTime.ToString("HH:mm"),
                 b.EndTime.ToString("HH:mm"),
                 b.Status.ToString(),
-                b.Service?.Price ?? 0
+                b.Service?.Price ?? 0,
+                b.Service?.Currency ?? "CHF"
             ))
             .ToList();
 

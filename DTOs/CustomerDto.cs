@@ -39,7 +39,8 @@ public record CustomerBookingItemDto(
     string StartTime,
     string EndTime,
     string Status,
-    decimal Price
+    decimal Price,
+    string Currency
 );
 
 // ── Customer CRUD ───────────────────────────────────────────────
