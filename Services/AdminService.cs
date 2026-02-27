@@ -121,12 +121,6 @@ public class AdminService
         var startOfLastMonth = startOfMonth.AddMonths(-1);
         var endOfLastMonth = startOfMonth.AddDays(-1);
 
-        // Get currency from first active service (or default to CHF)
-        var currency = await _context.Services
-            .Where(s => s.IsActive)
-            .Select(s => s.Currency)
-            .FirstOrDefaultAsync() ?? "CHF";
-
         // Base query with employee filter
         var bookingsQuery = _context.Bookings
             .Include(b => b.Service)
@@ -135,15 +129,43 @@ public class AdminService
         if (employeeId.HasValue)
             bookingsQuery = bookingsQuery.Where(b => b.EmployeeId == employeeId.Value);
 
+        // This month bookings with currency
         var thisMonthBookings = await bookingsQuery
-            .Where(b => b.CreatedAt >= startOfMonth && b.Status != BookingStatus.Cancelled)
-            .Select(b => new { b.Status, Price = b.Service != null ? b.Service.Price : 0 })
+            .Where(b => b.CreatedAt >= startOfMonth && b.Status != BookingStatus.Cancelled && b.Service != null)
+            .Select(b => new {
+                b.Status,
+                Price = b.Service.Price,
+                Currency = b.Service.Currency
+            })
             .ToListAsync();
 
+        // Last month bookings with currency
         var lastMonthBookings = await bookingsQuery
-            .Where(b => b.CreatedAt >= startOfLastMonth && b.CreatedAt <= endOfLastMonth && b.Status != BookingStatus.Cancelled)
-            .Select(b => new { b.Status, Price = b.Service != null ? b.Service.Price : 0 })
+            .Where(b => b.CreatedAt >= startOfLastMonth && b.CreatedAt <= endOfLastMonth && b.Status != BookingStatus.Cancelled && b.Service != null)
+            .Select(b => new {
+                b.Status,
+                Price = b.Service.Price,
+                Currency = b.Service.Currency
+            })
             .ToListAsync();
+
+        // Calculate revenue by currency for this month
+        var revenueThisMonthCHF = thisMonthBookings
+            .Where(b => b.Currency == "CHF")
+            .Sum(b => b.Price);
+
+        var revenueThisMonthEUR = thisMonthBookings
+            .Where(b => b.Currency == "EUR")
+            .Sum(b => b.Price);
+
+        // Calculate revenue by currency for last month
+        var revenueLastMonthCHF = lastMonthBookings
+            .Where(b => b.Currency == "CHF")
+            .Sum(b => b.Price);
+
+        var revenueLastMonthEUR = lastMonthBookings
+            .Where(b => b.Currency == "EUR")
+            .Sum(b => b.Price);
 
         var customersQuery = _context.Customers.AsQueryable();
         if (employeeId.HasValue)
@@ -169,35 +191,25 @@ public class AdminService
             .Select(g => new PopularServiceDto(
                 g.Key.ServiceName ?? "Unknown",
                 g.Count(),
-                g.Sum(b => b.Price),
-                g.First().Currency
+                g.Where(x => x.Currency == "CHF").Sum(x => x.Price),
+                g.Where(x => x.Currency == "EUR").Sum(x => x.Price)
             ))
             .OrderByDescending(s => s.BookingCount)
             .Take(5)
             .ToList();
 
-        var allCompletedBookings = await bookingsQuery
-            .Where(b => b.Status == BookingStatus.Completed && b.Service != null)
-            .Select(b => b.Service.Price)
-            .ToListAsync();
-
-        var avgBookingValue = allCompletedBookings.Any()
-            ? allCompletedBookings.Average()
-            : 0;
-
         return new DashboardStatisticsDto(
             thisMonthBookings.Count,
             lastMonthBookings.Count,
-            thisMonthBookings.Sum(b => b.Price),
-            lastMonthBookings.Sum(b => b.Price),
+            revenueThisMonthCHF,
+            revenueLastMonthCHF,
+            revenueThisMonthEUR,
+            revenueLastMonthEUR,
             totalCustomers,
             newCustomersThisMonth,
-            avgBookingValue,
-            currency, // Add this
             popularServices
         );
     }
-    
 
     public async Task<PagedResponseDto<BookingListItemDto>> GetBookingsAsync(BookingFilterDto filter)
     {

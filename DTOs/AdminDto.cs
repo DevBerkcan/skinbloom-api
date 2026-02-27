@@ -31,20 +31,20 @@ public record UpcomingBookingDto(
 public record DashboardStatisticsDto(
     int TotalBookingsThisMonth,
     int TotalBookingsLastMonth,
-    decimal RevenueThisMonth,
-    decimal RevenueLastMonth,
+    decimal RevenueThisMonthCHF,  
+    decimal RevenueLastMonthCHF,
+    decimal RevenueThisMonthEUR, 
+    decimal RevenueLastMonthEUR,
     int TotalCustomers,
     int NewCustomersThisMonth,
-    decimal AverageBookingValue,
-    string Currency,
     List<PopularServiceDto> PopularServices
 );
 
 public record PopularServiceDto(
     string ServiceName,
     int BookingCount,
-    decimal Revenue,
-    string Currency
+    decimal RevenueCHF,
+    decimal RevenueEUR
 );
 
 public record BookingListItemDto(
